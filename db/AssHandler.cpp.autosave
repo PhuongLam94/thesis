@@ -347,7 +347,6 @@ void loop_offset(AssemblyProgram* &ass_program){
 		}
 
 	}
-    cout << "abc";
 }
 void handle_binary(AssemblyProgram* &ass_program){
 	list<AssemblyArgument*>::iterator ai;

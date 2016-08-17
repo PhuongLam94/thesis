@@ -17,7 +17,7 @@
 # 04 Jul 02 - Mike: Added type.cpp, TypeType.cpp
 # 01 Jul 05 - Mike: Big merge from boomerang.pole branch
 
-top_srcdir = /home/phuong/sourcecode/Boomerang-Production
+top_srcdir = /home/phuong/Boomerang-Production
 
 # HOST_GNU_LD is true if the linker on this host machine is GNU
 HOST_GNU_LD = yes
@@ -35,7 +35,7 @@ LIBDIR=$(BOOMDIR)/lib
 BOOMSET=-DBOOMDIR=\"$(BOOMDIR)\"
 
 CC = gcc -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
-CXX = g++ -g -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+CXX = g++ -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 CFLAGS = -m32 -Wall
 CXXFLAGS = -m32 -Wall
 CPPFLAGS = -I$(top_srcdir)/include 

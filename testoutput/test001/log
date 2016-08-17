@@ -1,8 +1,6 @@
 got filename elf-init.c for main
-size 0x8 meet with size 0x20!
-size 0x20 meet with size 0x8!
-size 0x8 meet with size 0x20!
-size 0x20 meet with size 0x8!
-size 0x8 meet with size 0x20!
 ### WARNING: iteration limit exceeded for dfaTypeAnalysis of procedure main ###
 ### WARNING: iteration limit exceeded for dfaTypeAnalysis of procedure main ###
+type failure: no type for subexp1 of r8.m.bit8
+type failure: no type for subexp1 of r8.m
+type failure: no type for subexp1 of a.x

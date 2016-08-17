@@ -516,20 +516,20 @@ YY_parse_CONSTRUCTOR_CODE;
  #line 352 "/usr/share/bison++/bison.cc"
 
 
-#define	YYFINAL		50
+#define	YYFINAL		57
 #define	YYFLAG		-32768
 #define	YYNTBASE	21
 
-#define YYTRANSLATE(x) ((unsigned)(x) <= 272 ? yytranslate[x] : 33)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 272 ? yytranslate[x] : 36)
 
 static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,    18,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,    20,     2,     2,     2,     2,
+     2,     2,     2,     2,    19,     2,     2,     2,     2,     2,
+     2,     2,     2,     2,     2,    18,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,    19,     2,     2,     2,     2,     2,     2,
+     2,     2,     2,    20,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -555,104 +555,108 @@ static const char yytranslate[] = {     0,
 
 #if YY_parse_DEBUG != 0
 static const short yyprhs[] = {     0,
-     0,     6,    10,    13,    15,    21,    26,    29,    31,    35,
-    38,    40,    42,    45,    47,    51,    53,    54,    56,    58,
-    61,    64,    66,    69,    71,    75,    77,    79,    81,    83,
-    87
+     0,     3,     5,     9,    12,    14,    19,    26,    29,    31,
+    37,    42,    45,    47,    51,    54,    56,    58,    61,    63,
+    67,    69,    70,    72,    74,    77,    80,    82,    85,    87,
+    91,    93,    95,    97,    99,   103
 };
 
-static const short yyrhs[] = {     3,
-     6,     4,    11,    22,     0,     4,    11,    22,     0,    22,
-    23,     0,    23,     0,     6,    11,    12,     6,    24,     0,
-     6,    11,    12,    24,     0,    24,    25,     0,    25,     0,
-    26,     5,     6,     0,    26,     6,     0,    27,     0,    11,
-     0,    11,    28,     0,    29,     0,    28,    13,    29,     0,
-    32,     0,     0,    17,     0,    16,     0,    18,    31,     0,
-    18,    11,     0,    31,     0,    19,    11,     0,    11,     0,
-    11,    20,    15,     0,     8,     0,     9,     0,    10,     0,
-    15,     0,    32,    14,    30,     0,    30,     0
+static const short yyrhs[] = {    23,
+    22,     0,    22,     0,     4,    11,    25,     0,    23,    24,
+     0,    24,     0,     3,    11,    11,     6,     0,     3,    11,
+    11,    18,    15,     6,     0,    25,    26,     0,    26,     0,
+     6,    11,    12,     6,    27,     0,     6,    11,    12,    27,
+     0,    27,    28,     0,    28,     0,    29,     5,     6,     0,
+    29,     6,     0,    30,     0,    11,     0,    11,    31,     0,
+    32,     0,    31,    13,    32,     0,    35,     0,     0,    17,
+     0,    16,     0,    19,    34,     0,    19,    11,     0,    34,
+     0,    20,    11,     0,    11,     0,    11,    18,    15,     0,
+     8,     0,     9,     0,    10,     0,    15,     0,    35,    14,
+    33,     0,    33,     0
 };
 
 #endif
 
 #if (YY_parse_DEBUG != 0) || defined(YY_parse_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-    79,    84,    89,    91,    93,   100,   107,   109,   111,   113,
-   115,   118,   125,   133,   135,   137,   141,   142,   148,   152,
-   157,   162,   167,   172,   176,   187,   189,   190,   191,   193,
-   201
+    79,    81,    83,    89,    91,    93,    95,    97,    99,   101,
+   108,   115,   117,   119,   121,   123,   126,   133,   141,   143,
+   145,   149,   150,   156,   160,   165,   170,   175,   180,   184,
+   195,   197,   198,   199,   201,   209
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","DEFINE","PUBLIC",
 "COMMENT","END_LINE","END_OF_LINE","HECXA","OCTAL","BINARY","ID","COLON","COMMA",
-"OPERATOR","INT","FLOAT","STRING","'#'","'@'","'.'","program","labels","label",
-"lines","line","component","instruction","arguments","argument","literal","direct_value",
-"expressions",""
+"OPERATOR","INT","FLOAT","STRING","'.'","'#'","'@'","program","body","defines",
+"define","labels","label","lines","line","component","instruction","arguments",
+"argument","literal","direct_value","expressions",""
 };
 #endif
 
 static const short yyr1[] = {     0,
-    21,    21,    22,    22,    23,    23,    24,    24,    25,    25,
-    26,    27,    27,    28,    28,    29,    30,    30,    30,    30,
-    30,    30,    30,    30,    30,    31,    31,    31,    31,    32,
-    32
+    21,    21,    22,    23,    23,    24,    24,    25,    25,    26,
+    26,    27,    27,    28,    28,    29,    30,    30,    31,    31,
+    32,    33,    33,    33,    33,    33,    33,    33,    33,    33,
+    34,    34,    34,    34,    35,    35
 };
 
 static const short yyr2[] = {     0,
-     5,     3,     2,     1,     5,     4,     2,     1,     3,     2,
-     1,     1,     2,     1,     3,     1,     0,     1,     1,     2,
-     2,     1,     2,     1,     3,     1,     1,     1,     1,     3,
-     1
+     2,     1,     3,     2,     1,     4,     6,     2,     1,     5,
+     4,     2,     1,     3,     2,     1,     1,     2,     1,     3,
+     1,     0,     1,     1,     2,     2,     1,     2,     1,     3,
+     1,     1,     1,     1,     3,     1
 };
 
 static const short yydefact[] = {     0,
-     0,     0,     0,     0,     0,     0,     2,     4,     0,     0,
-     3,     1,     0,     0,    12,     6,     8,     0,    11,     5,
-    26,    27,    28,    24,    29,    19,    18,     0,     0,    13,
-    14,    31,    22,    16,     7,     0,    10,     0,    21,    20,
-    23,    17,    17,     9,    25,    15,    30,     0,     0,     0
+     0,     0,     2,     0,     5,     0,     0,     1,     4,     0,
+     0,     3,     9,     6,     0,     0,     8,     0,     0,     7,
+     0,    17,    11,    13,     0,    16,    10,    31,    32,    33,
+    29,    34,    24,    23,     0,     0,    18,    19,    36,    27,
+    21,    12,     0,    15,     0,    26,    25,    28,    22,    22,
+    14,    30,    20,    35,     0,     0,     0
 };
 
-static const short yydefgoto[] = {    48,
-     7,     8,    16,    17,    18,    19,    30,    31,    32,    33,
-    34
+static const short yydefgoto[] = {    55,
+     3,     4,     5,    12,    13,    23,    24,    25,    26,    37,
+    38,    39,    40,    41
 };
 
-static const short yypact[] = {    13,
-    -2,     7,    25,    26,    28,    29,    26,-32768,    26,    30,
--32768,    26,    22,    32,    -8,    32,-32768,    31,-32768,    32,
--32768,-32768,-32768,    21,-32768,-32768,-32768,    16,    33,    34,
--32768,-32768,-32768,    35,-32768,    39,-32768,    36,-32768,-32768,
--32768,     4,     4,-32768,-32768,-32768,-32768,    46,    48,-32768
+static const short yypact[] = {    23,
+    -7,    -1,-32768,    23,-32768,     8,    32,-32768,-32768,    11,
+    17,    32,-32768,-32768,    24,    30,-32768,    35,    12,-32768,
+    33,    -8,    33,-32768,    29,-32768,    33,-32768,-32768,-32768,
+    25,-32768,-32768,-32768,    22,    34,    36,-32768,-32768,-32768,
+    37,-32768,    40,-32768,    38,-32768,-32768,-32768,     5,     5,
+-32768,-32768,-32768,-32768,    47,    48,-32768
 };
 
 static const short yypgoto[] = {-32768,
-    41,    23,    38,    18,-32768,-32768,-32768,    11,    12,    37,
--32768
+    46,-32768,    50,-32768,    43,    31,    13,-32768,-32768,-32768,
+     7,     9,    26,-32768
 };
 
 
-#define	YYLAST		65
+#define	YYLAST		61
 
 
-static const short yytable[] = {    21,
-    22,    23,    24,     3,   -17,   -17,    25,    26,    27,    28,
-    29,    21,    22,    23,    24,     1,     2,     4,    25,    26,
-    27,    28,    29,    21,    22,    23,    39,    14,     5,    11,
-    25,     6,    15,    35,    11,    36,    37,    35,     9,    10,
-    38,    13,    15,    41,    44,    49,    42,    50,    43,    12,
-    45,    20,    46,     0,    47,     0,     0,     0,     0,     0,
-     0,     0,     0,     0,    40
+static const short yytable[] = {    28,
+    29,    30,    31,     6,   -22,   -22,    32,    33,    34,     7,
+    35,    36,    28,    29,    30,    31,    14,    21,    10,    32,
+    33,    34,    22,    35,    36,     1,     2,    16,    15,    28,
+    29,    30,    46,    43,    44,    42,    32,    11,    18,    42,
+    20,    19,    45,    22,    48,    51,    56,    57,    49,     8,
+    50,    27,    52,     9,    17,    53,     0,     0,    54,     0,
+    47
 };
 
 static const short yycheck[] = {     8,
-     9,    10,    11,     6,    13,    14,    15,    16,    17,    18,
-    19,     8,     9,    10,    11,     3,     4,    11,    15,    16,
-    17,    18,    19,     8,     9,    10,    11,     6,     4,     7,
-    15,     6,    11,    16,    12,     5,     6,    20,    11,    11,
-    20,    12,    11,    11,     6,     0,    13,     0,    14,     9,
-    15,    14,    42,    -1,    43,    -1,    -1,    -1,    -1,    -1,
-    -1,    -1,    -1,    -1,    28
+     9,    10,    11,    11,    13,    14,    15,    16,    17,    11,
+    19,    20,     8,     9,    10,    11,     6,     6,    11,    15,
+    16,    17,    11,    19,    20,     3,     4,    11,    18,     8,
+     9,    10,    11,     5,     6,    23,    15,     6,    15,    27,
+     6,    12,    18,    11,    11,     6,     0,     0,    13,     4,
+    14,    21,    15,     4,    12,    49,    -1,    -1,    50,    -1,
+    35
 };
 
 #line 352 "/usr/share/bison++/bison.cc"
@@ -1148,22 +1152,23 @@ YYLABEL(yyreduce)
 
   switch (yyn) {
 
-case 1:
-#line 80 "AssParser.y"
-{ std::cout << "Define Start Label" << yyvsp[-1].sval << std::endl;
-						startLabel = yyvsp[-1].sval;
-						ass_program->labelList = gl_labels;
-					;
-    break;}
-case 2:
+case 3:
 #line 84 "AssParser.y"
-{ std::cout << "Not define Start Label " << yyvsp[-1].sval << std::endl;
+{ std::cout << "Start Label" << yyvsp[-1].sval << std::endl;
 						startLabel = yyvsp[-1].sval;
 						ass_program->labelList = gl_labels;
 					;
     break;}
-case 5:
+case 6:
 #line 94 "AssParser.y"
+{ std::cout << "Define variable "<< yyvsp[-2].sval << " value " << yyvsp[-1].sval <<std::endl; ;
+    break;}
+case 7:
+#line 95 "AssParser.y"
+{ std::cout << "Define variable " << yyvsp[-4].sval << " value " << yyvsp[-3].sval <<"."<< yyvsp[-1].ival << std::endl; ;
+    break;}
+case 10:
+#line 102 "AssParser.y"
 { std::cout << "Label " << yyvsp[-3].sval << std::endl;
 										AssemblyLabel* label = new AssemblyLabel();
 										label->name = yyvsp[-3].sval;
@@ -1171,8 +1176,8 @@ case 5:
 										gl_labels->push_back(label);
 										gl_lines = new list<AssemblyLine*>();;
     break;}
-case 6:
-#line 100 "AssParser.y"
+case 11:
+#line 108 "AssParser.y"
 { std::cout << "Label " << yyvsp[-2].sval << std::endl;
 										AssemblyLabel* label = new AssemblyLabel();
 										label->name = yyvsp[-2].sval;
@@ -1180,8 +1185,8 @@ case 6:
 										gl_labels->push_back(label);
 										gl_lines = new list<AssemblyLine*>();;
     break;}
-case 12:
-#line 119 "AssParser.y"
+case 17:
+#line 127 "AssParser.y"
 {   AssemblyLine* line = new AssemblyLine();
 				line->kind = INSTRUCTION;
 				line->name = yyvsp[0].sval;
@@ -1189,8 +1194,8 @@ case 12:
 				gl_lines->push_back(line);
 			    gl_exps = new list<AssemblyExpression*>();;
     break;}
-case 13:
-#line 125 "AssParser.y"
+case 18:
+#line 133 "AssParser.y"
 { AssemblyLine* line = new AssemblyLine();
 				line->kind = INSTRUCTION;
 				line->name = yyvsp[-1].sval;
@@ -1199,13 +1204,13 @@ case 13:
 			    gl_exps = new list<AssemblyExpression*>();
 				;
     break;}
-case 16:
-#line 138 "AssParser.y"
+case 21:
+#line 146 "AssParser.y"
 {gl_exps->push_back(expr);
 				expr = new AssemblyExpression();;
     break;}
-case 18:
-#line 142 "AssParser.y"
+case 23:
+#line 150 "AssParser.y"
 {	
 				std::cout << "String " << yyvsp[0].sval << std::endl;
 				Arg a;
@@ -1213,54 +1218,54 @@ case 18:
 				yyval.arg = new AssemblyArgument(0 , a);
 				;
     break;}
-case 19:
-#line 148 "AssParser.y"
+case 24:
+#line 156 "AssParser.y"
 {std::cout << "FLOAT " << yyvsp[0].fval << std::endl;
 				Arg a;
 				a.f = yyvsp[0].fval;
 				yyval.arg = new AssemblyArgument(2,a);;
     break;}
-case 20:
-#line 152 "AssParser.y"
+case 25:
+#line 160 "AssParser.y"
 {std::cout << "Immediate Value " << yyvsp[0].ival << std::endl;
 						Arg a;
 						a.i = yyvsp[0].ival;
 						yyval.arg = new AssemblyArgument(4,a);
 						;
     break;}
-case 21:
-#line 157 "AssParser.y"
+case 26:
+#line 165 "AssParser.y"
 {std::cout << "Immediate Value " << yyvsp[0].sval << std::endl;
 				Arg a;
 				a.c = yyvsp[0].sval;
 				yyval.arg = new AssemblyArgument(5,a);
 			   ;
     break;}
-case 22:
-#line 162 "AssParser.y"
+case 27:
+#line 170 "AssParser.y"
 {std::cout << "Direct Value " << yyvsp[0].ival << std::endl;
 					Arg a;
 					a.i = yyvsp[0].ival;
 					yyval.arg = new AssemblyArgument(1,a);
 					;
     break;}
-case 23:
-#line 167 "AssParser.y"
+case 28:
+#line 175 "AssParser.y"
 {std::cout << "Indirect value " << yyvsp[0].sval << std::endl;
 					Arg a;
 					a.c = yyvsp[0].sval;
 					yyval.arg = new AssemblyArgument(3,a);
 					;
     break;}
-case 24:
-#line 172 "AssParser.y"
+case 29:
+#line 180 "AssParser.y"
 {std::cout << "ID " << yyvsp[0].sval << std::endl;
 					Arg a;
 					a.c = yyvsp[0].sval;
 					yyval.arg = new AssemblyArgument(6,a);;
     break;}
-case 25:
-#line 176 "AssParser.y"
+case 30:
+#line 184 "AssParser.y"
 { std::cout << "BIT" << std::endl;
 					std::stringstream ss;
   					ss << yyvsp[-2].sval << '.' << yyvsp[0].ival;
@@ -1272,24 +1277,24 @@ case 25:
 					a.c = cstr;
 					yyval.arg = new AssemblyArgument(8,a);;
     break;}
-case 26:
-#line 188 "AssParser.y"
+case 31:
+#line 196 "AssParser.y"
 {yyval.ival = yyvsp[0].ival;;
     break;}
-case 27:
-#line 189 "AssParser.y"
+case 32:
+#line 197 "AssParser.y"
 {yyval.ival = yyvsp[0].ival;;
     break;}
-case 28:
-#line 190 "AssParser.y"
+case 33:
+#line 198 "AssParser.y"
 {yyval.ival = yyvsp[0].ival;;
     break;}
-case 29:
-#line 191 "AssParser.y"
+case 34:
+#line 199 "AssParser.y"
 {yyval.ival = yyvsp[0].ival;;
     break;}
-case 30:
-#line 194 "AssParser.y"
+case 35:
+#line 202 "AssParser.y"
 { 
 	 								Arg a;
 	 								a.c = yyvsp[-1].sval;
@@ -1298,8 +1303,8 @@ case 30:
 	 								expr->argList.push_back(new AssemblyArgument(7,a));
 	 								expr->argList.push_back(yyvsp[0].arg);;
     break;}
-case 31:
-#line 201 "AssParser.y"
+case 36:
+#line 209 "AssParser.y"
 { expr->argList.push_back(yyvsp[0].arg);;
     break;}
 }
@@ -1506,11 +1511,25 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 204 "AssParser.y"
+#line 212 "AssParser.y"
 
 
 
 void handle(const char* file) {
+	/*FILE * pFile;
+	   char buffer [100];
+
+	   pFile = fopen (file , "r");
+	   if (pFile == NULL) perror ("Error opening file");
+	   else
+	   {
+	     while ( ! feof (pFile) )
+	     {
+	       if ( fgets (buffer , 100 , pFile) == NULL ) break;
+	       cout << buffer;
+	     }
+	     fclose (pFile);
+	   }*/
 	ass_program = new AssemblyProgram();
 	ass_program->name = "8051";
 	// open a file handle to a particular file:
@@ -1519,6 +1538,7 @@ void handle(const char* file) {
 	if (!myfile) {
 		cout << "I can't open a assembly file!" << endl;
 		return ;
+	} else {
 	}
 	// set flex to read from it instead of defaulting to STDIN:
 	yyin = myfile;

@@ -97,6 +97,7 @@ public:
 	AssemblyLine(){
 		checked = false;
 		offset = 0;
+                expList ->alloc
 	}
 	~AssemblyLine(){}
 };
