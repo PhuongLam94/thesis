@@ -1,24 +1,26 @@
-MAIN
+bb
 		MOV
 					 A 
-					 100 
+					 Option + 1 
 		MOV
-					 R2 
-					 10 
-		MOV
+					 R7 
+					 someFlag + 100 
+		SETB
 					 A 
-					 10 
-		DJNZ
-					 R2 
-					 AGAIN 
-		MOV
+		CLR
+					 P0 
+		JNB
 					 A 
-					 R2 
+					 cc 
+		MOV
+					 R7 
+					 someFlag + 450 
+		SETB
+					 DR 
 		RET
-AGAIN
+cc
 		MOV
-					 A 
-					 10 
-		DJNZ
-					 R2 
-					 AGAIN 
+					 R7 
+					 someFlag + 450 
+		SETB
+					 DR 

@@ -110,7 +110,7 @@ void init_defined(const char* name){
 	for(i = defined.begin(); i != defined.end(); ++i){
 		std::cout << i->first << ":" << i->second << std::endl;
 	}
-	/*defined["Option"] = "R1";
+    /*defined["Option"] = "R1";
 	defined["someFlag"] = "R2";
 	defined["DRAB"] = "ACC.1";
 	defined["CARB"] = "ACC.3";
@@ -122,7 +122,7 @@ void init_defined(const char* name){
 	defined["SIMP"] = "ACC.4";
 	defined["SYSFLGMAP"] = "R4";
 	defined["BTS"] = "P0";
-	defined["whatever"] = "R3";*/
+    defined["whatever"] = "R3";//*/
 }
 char * defined_value(char * name){
 	std::map<char *,char *>::iterator it;
@@ -468,8 +468,7 @@ AssemblyProgram* AssHandler::process(const char* name) {
 	handle_bit(ass_program);
 
 	std::cout << "-----APPENDING JUMP AND BRANCH STATEMENTS---\n";	
-	append_jumps(ass_program);
-
+    append_jumps(ass_program);
 	std::cout << "-----CHECK FOR LOOPS------\n";
 	loop_offset(ass_program);
 

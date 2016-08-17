@@ -1090,7 +1090,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 	if (child->size() == 0) {
 		std::cout<<"child size = 0\n";
 		Boomerang::get()->alert_decompiling(this);
-		std::cout << std::setw(indent) << " " << "decompiling " << getName() << "\n";
+        std::cout << std::setw(indent) << " " << "decompiling " << getName() << " ABC\n";
 		std::cerr<<"AFTER initialise"<<std::endl;
 		initialiseDecompile();					// Sort the CFG, number statements, etc
 		

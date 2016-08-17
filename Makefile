@@ -47,7 +47,7 @@
 # Variables detected by ./configure
 #
 
-top_srcdir = .
+top_srcdir = /home/phuong/sourcecode/Boomerang-Production
 
 # HOST_GNU_LD is "yes" if the linker on this host machine is GNU
 HOST_GNU_LD = yes
@@ -68,7 +68,7 @@ TKML =
 MAKEDEPEND=
 BISONPP=
 FLEXPP=
-M4=/usr/bin/m4
+M4=
 
 ####################################
 # Detection of OS specific settings
@@ -106,8 +106,8 @@ endif
 # Compiler settings
 #
 
-CC = gcc
-CXX = g++
+CC = gcc -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+CXX = g++ -g -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 CFLAGS = -m32 -Wall
 CXXFLAGS = -m32 -Wall
 CPPFLAGS = -I$(top_srcdir)/include 
@@ -144,7 +144,7 @@ lib:
 	
 loaders: lib
 	$(MAKE) -C loader
-
+	
 #########################################
 # Detection of machine types and loaders
 #

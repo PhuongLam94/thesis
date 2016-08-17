@@ -7,13 +7,13 @@
 # $Revision: 1.5 $
 # 18 Apr 04 - Trent: Created.
 
-top_srcdir = ..
+top_srcdir = /home/phuong/sourcecode/Boomerang-Production
 
 LIB_OBJS = transform.o
 LIB=$(top_srcdir)/lib/transform.so
 
-CC = gcc
-CXX = g++
+CC = gcc -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+CXX = g++ -g -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 CFLAGS = -m32 -Wall
 CXXFLAGS = -m32 -Wall
 CPPFLAGS = -I$(top_srcdir)/include 

@@ -12,7 +12,7 @@
 # 08 Apr 02 - Mike: Created.
 # 10 Apr 02 - Mike: interface -> include
 
-top_srcdir = ..
+top_srcdir = /home/phuong/sourcecode/Boomerang-Production
 
 FRONTEND_LIB = $(top_srcdir)/lib/libfrontend.so
 TEST_OBJS = FrontSparcTest.o FrontPentTest.o # FrontendTest.o 
@@ -25,8 +25,8 @@ MACH_SRC  = $(patsubst %, %decoder.cpp, $(MACHS))
 MACH_FE_SRC=$(patsubst %, %frontend.cpp, $(MACHS))
 MACH_FE_OBJ=$(patsubst %, %frontend.o, $(MACHS))
 
-CC = gcc
-CXX = g++
+CC = gcc -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+CXX = g++ -g -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 CFLAGS = -m32 -Wall
 CXXFLAGS = -m32 -Wall
 CPPFLAGS = -I$(top_srcdir)/include 
