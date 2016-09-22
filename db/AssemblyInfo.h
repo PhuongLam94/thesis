@@ -45,17 +45,26 @@ union Arg {
    char* c;
    bits bit;
 };
+class UnionDefine{
+public:
+        char* byteVar;
+        map<char*, int>* bitVar;
+};
 class AssemblyArgument{
 public:
 	ARGS_KIND kind;
-        Arg value;
-        char* variable;
+    Arg value;
+    Arg replacement;
 public:
-        AssemblyArgument(int i,Arg v, char *var=""){
+    AssemblyArgument(){
+        kind = ARGS_KIND(0);
+
+    }
+	AssemblyArgument(int i,Arg v){
 		kind = ARGS_KIND(i);
 		value = v;
 	}
-        void change(int i,Arg v, char *var=""){
+	void change(int i,Arg v){
 		kind = ARGS_KIND(i);
 		value = v;
 	}
@@ -117,18 +126,24 @@ class AssemblyProgram{
 public:
 	std::string name;
 	std::list<AssemblyLabel*> *labelList;
-	std::list<char*> bitReg;
+        std::list<char*> bitReg;
+        std::list<UnionDefine*>* unionDefine= new std::list<UnionDefine*>();
+        std::map<char*, AssemblyArgument> replacement;
 public:
 	AssemblyProgram(){
 	}
 	~AssemblyProgram(){}
 };
-
 class AssHandler{
 public:
-	AssHandler(){
-	}
-	AssemblyProgram* process(const char* name);
-	~AssHandler(){}
+
+        AssHandler(){
+
+        }
+        AssemblyProgram* process(const char* name);
+        ~AssHandler(){}
+
 };
+
+
 

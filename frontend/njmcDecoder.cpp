@@ -52,6 +52,7 @@
 NJMCDecoder::NJMCDecoder(Prog* prog) : prog(prog)
 {}
 
+
 /*==============================================================================
  * FUNCTION:	   NJMCDecoder::instantiate
  * OVERVIEW:	   Given an instruction name and a variable list of expressions representing the actual operands of

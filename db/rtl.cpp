@@ -557,6 +557,7 @@ bool RTL::areFlagsAffected() {
 }
 
 void RTL::generateCode(HLLCode *hll, BasicBlock *pbb, int indLevel) {
+    //std::cout<<stmtList.size()<<"\n";
 	for (iterator it = stmtList.begin();
 	  it != stmtList.end(); it++) {
 		(*it)->generateCode(hll, pbb, indLevel);

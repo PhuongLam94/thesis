@@ -1,4 +1,9 @@
 bb
 		SETB
-					 A 
+					 TESTUPS1 
+		MOV
+					 OPTIONS 
+					 9999 
+		CLR
+					 ACC.1 
 		RET

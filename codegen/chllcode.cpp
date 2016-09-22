@@ -105,8 +105,8 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 	Const	*c = (Const*)exp;
 	Unary	*u = (Unary*)exp;
 	Binary	*b = (Binary*)exp;
-	Ternary *t = (Ternary*)exp;
-	
+    Ternary *t = (Ternary*)exp;
+    std::cout<<op<<"\n";
 	switch(op) {
 		case opIntConst: {
 			int K = c->getInt();
@@ -228,6 +228,7 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 		case opLocal:
 			c = dynamic_cast<Const*>(u->getSubExp1());
 			assert(c && c->getOper() == opStrConst);
+            std::cout<<c->getStr()<<"\n";
 			str << c->getStr();
 			break;
 		case opEquals:
@@ -395,11 +396,13 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 			openParen(str, curPrec, PREC_UNARY);
 			// annotateMemofs should have added a cast if it was needed
 			str << "*";
+            std::cout<<"abc"<<u->getSubExp1()->getOper()<<"\n";
 			appendExp(str, u->getSubExp1(), PREC_UNARY);
 			closeParen(str, curPrec, PREC_UNARY);
 			break;
 		case opRegOf:
 			{
+
 				// MVE: this can likely go
 				if (VERBOSE)
 					LOG << "WARNING: CHLLCode::appendExp: case opRegOf is deprecated\n";
@@ -410,7 +413,8 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 				}
 				assert(u->getSubExp1()->getOper() == opIntConst);
 				const char *n = m_proc->getProg()->getRegName(
-									((Const*)u->getSubExp1())->getInt());
+                                    ((Const*)u->getSubExp1())->getInt());
+
 				if (n) {
 					if (n[0] == '%')
 						str << n+1;
@@ -707,6 +711,7 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 #if SYMS_IN_BACK_END
 			Exp* b = u->getSubExp1();					// Base expression
 			char* sym = m_proc->lookupSym(exp);			// Check for (cast)sym
+            std::cout<<"xyz"<<sym<<"\n";
 			if (sym) {
 				str << "(";
 				appendType(str, ((TypedExp*)u)->getType());
@@ -1578,6 +1583,7 @@ void CHLLCode::AddProcEnd() {
  */
 void CHLLCode::AddLocal(const char *name, Type *type, bool last) {
 	std::ostringstream s;
+    std::cout<<"AAAA: "<<name;
 	indent(s, 1);
 	appendTypeIdent(s, type, name);
 	Exp *e = m_proc->expFromSymbol(name);

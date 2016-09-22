@@ -1023,7 +1023,7 @@ void BasicBlock::WriteBB(HLLCode *hll, int indLevel)
 	hll->AddLabel(indLevel, ord);
 
 	if (m_pRtls) {
-		for (std::list<RTL*>::iterator it = m_pRtls->begin(); it != m_pRtls->end(); it++) {
+        for (std::list<RTL*>::iterator it = m_pRtls->begin(); it != m_pRtls->end(); it++) {
 			if (DEBUG_GEN)
 				LOG << (*it)->getAddress() << "\t";
 			(*it)->generateCode(hll, this, indLevel);

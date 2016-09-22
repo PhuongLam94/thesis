@@ -64,6 +64,7 @@ const char *registers[rsize] = {
 };
 std::map<char*,int> undefined;
 std::map<char *, char *> defined;
+std::map<char*,AssemblyArgument> replace;
 list<const char*> loop_labels;
 
 bool check_loop(const char* name){
@@ -73,6 +74,30 @@ bool check_loop(const char* name){
 			return true;
 	}
 	return false;
+}
+Arg findReplacement(char * name){
+    map<char*, AssemblyArgument>::iterator it;
+    for (it = replace.begin(); it!=replace.end(); it++){
+        if(strcmp(it->first, name) == 0){
+            return ((it->second).value);
+        }
+    }
+    Arg temp;
+    temp.c = "NULL";
+    return temp;
+}
+void showUnionDefine(AssemblyProgram* ass_program){
+    list<UnionDefine*>::iterator li;
+    for (li = unionDefine1->begin(); li!=unionDefine1->end(); li++){
+        UnionDefine* temp = (*li);
+        cout << "Byte var: " << temp -> byteVar <<endl;
+        cout << "Bit vars: "<<endl;
+        map<char*, int>::iterator mi;
+        for (mi = temp ->bitVar->begin(); mi != temp -> bitVar -> end(); mi++){
+            cout << (*mi).first << ": " << (*mi).second << endl;
+        }
+        ass_program->unionDefine->push_back(temp);
+    }
 }
 void init_defined(const char* name){
 	std::string path(name);
@@ -105,7 +130,16 @@ void init_defined(const char* name){
 	    }
 
 	}
-	fclose(myfile);
+    fclose(myfile);
+
+    list<AssemblyLine*>::iterator di;
+        for(di = defines -> begin(); di != defines->end(); di++){
+            AssemblyExpression* var1 = (*di) -> expList -> back();
+            (*di) -> expList -> pop_back();
+            char* var2 = (*((*((*di) -> expList -> back())).argList.front())).value.c;
+            replace[var2] = *(var1 ->argList.front());
+        }
+
 	std::map<char *, char *>::iterator i;
 	for(i = defined.begin(); i != defined.end(); ++i){
 		std::cout << i->first << ":" << i->second << std::endl;
@@ -166,7 +200,10 @@ void print_arg(AssemblyExpression *expr){
 				case IMMEDIATE_ID:
 				case 6:
 				case INDIRECT:
-					std::cout << (*ai)->value.c << " ";
+                    if ((*ai)->replacement.c)
+                        std::cout<<(*ai)->value.c<<" ("<<(*ai)->replacement.c<<") ";
+                    else
+                        std::cout << (*ai)->value.c << " ";
 					myfile << (*ai)->value.c << " ";
 					break;
 				case DIRECT_FLOAT:
@@ -179,8 +216,11 @@ void print_arg(AssemblyExpression *expr){
 					myfile << (*ai)->value.i << " ";
 					break;
 				case 8:
-					std::cout << (*ai)->value.c  << " ";
-					myfile << (*ai)->value.c  << " ";
+                if ((*ai)->replacement.c)
+                    std::cout<<(*ai)->value.c<<" ("<<(*ai)->replacement.bit.reg<<"."<<(*ai)->replacement.bit.pos<<") ";
+                else
+                    std::cout << (*ai)->value.c << " ";
+                myfile << (*ai)->value.c << " ";
 					break;
 				default:
 					break;
@@ -347,7 +387,6 @@ void loop_offset(AssemblyProgram* &ass_program){
 		}
 
 	}
-    cout << "abc";
 }
 void handle_binary(AssemblyProgram* &ass_program){
 	list<AssemblyArgument*>::iterator ai;
@@ -362,12 +401,14 @@ void handle_binary(AssemblyProgram* &ass_program){
 						for(ai = (*ei)->argList.begin(); ai != (*ei)->argList.end(); ai++ ){
 							switch ((*ai)->kind){
 								case 5: //IMMEDIATE ID
-								case 6: // ID
-									if(!if_exist((*ai)->value.c,registers,rsize)){
-										char * n = defined_value((*ai)->value.c);
-										if (n)
-											(*ai)->value.c = n;
-									}
+                                case 6: // ID
+                                    if(!if_exist((*ai)->value.c,registers,rsize)){
+                                        char * replacement = (*ai)->value.c;
+                                        Arg n = findReplacement((*ai)->value.c);
+                                        if (strcmp(n.c, "NULL") != 0){
+                                            (*ai)->replacement = n;
+                                        }
+                                    }
 									break;
 								default:
 									break;
@@ -394,13 +435,17 @@ void handle_bit(AssemblyProgram* &ass_program){
 						AssemblyExpression* temp_expr = (*li)->expList->front();
 						if(temp_expr->argList.size()>0){
 							bool check = false;
+                            bool isBitVar = false;
 							AssemblyArgument* temp_arg = temp_expr->argList.front();
 
 							switch(temp_arg->kind){
 								case 6: //ID
 								{	std::string n(temp_arg->value.c);
 									if (n != "A" && n != "C" ){
-										temp_arg->change(8,temp_arg->value);
+                                        if (n.find(".") != string::npos)
+                                            temp_arg->change(8,temp_arg->value);
+                                        else
+                                            isBitVar = true;
 										check = true;
 									}
 									break;
@@ -412,31 +457,35 @@ void handle_bit(AssemblyProgram* &ass_program){
 									break;
 							}
 							//---WHOLE STUFF FOR BIT HANDLING
-							if (check){
-								std::string temp(temp_arg->value.c);
-								char c =  temp.at(temp.size()-1);
-								int num = c - '0';
-								temp =  temp.substr(0, temp.size()-1);
-								temp =  temp.substr(0, temp.size()-1);
-								if (temp == "ACC")
-									temp = "A";
-								char *cstr = new char[temp.length() + 1];
-								strcpy(cstr, temp.c_str());
-								Arg a;
-								a.bit.reg = cstr;
-								a.bit.pos = num;
-								temp_arg->change(8,a);
+                            if (check){
+                                if (!isBitVar){
+                                    std::string temp(temp_arg->value.c);
+                                    char c =  temp.at(temp.size()-1);
+                                    int num = c - '0';
+                                    temp =  temp.substr(0, temp.size()-1);
+                                    temp =  temp.substr(0, temp.size()-1);
+                                    if (temp == "ACC")
+                                        temp = "A";
+                                    char *cstr = new char[temp.length() + 1];
+                                    strcpy(cstr, temp.c_str());
+                                    Arg a;
+                                    a.bit.reg = cstr;
+                                    a.bit.pos = num;
+                                    temp_arg->change(8,a);
 
-								std::list<char*>::iterator br;
-								bool existed = false;
-        						for (br = ass_program->bitReg.begin(); br != ass_program->bitReg.end(); ++ br ){
-        							if(std::string(cstr) == std::string((*br))){
-        								existed = true;
-        								break;
-        							}
-        						}
-        						if (!existed)
-									ass_program->bitReg.push_back(cstr);
+                                    std::list<char*>::iterator br;
+                                    bool existed = false;
+                                    for (br = ass_program->bitReg.begin(); br != ass_program->bitReg.end(); ++ br ){
+                                        if(std::string(cstr) == std::string((*br))){
+                                            existed = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!existed)
+                                        ass_program->bitReg.push_back(cstr);
+                                } else {
+
+                                }
 							}
 							//-------------------------------
 						}
@@ -466,7 +515,7 @@ AssemblyProgram* AssHandler::process(const char* name) {
 	handle_binary(ass_program);
 
 	std::cout << "-----HANDLE BIT ---\n";
-	handle_bit(ass_program);
+    //handle_bit(ass_program);
 
 	std::cout << "-----APPENDING JUMP AND BRANCH STATEMENTS---\n";	
     append_jumps(ass_program);
@@ -479,6 +528,11 @@ AssemblyProgram* AssHandler::process(const char* name) {
 
 	std::cout << "---ADDRESSING LABEL---\n";
 	address_label(ass_program);
+
+    std::cout << "---HANDLE UNION---\n";
+    showUnionDefine(ass_program);
+
+    ass_program->replacement = replace;
 
 	list<AssemblyLabel*>::iterator lbi;
 	if (ass_program){
@@ -494,3 +548,4 @@ AssemblyProgram* AssHandler::process(const char* name) {
 	}
 	return ass_program;	
 }
+

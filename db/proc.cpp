@@ -1090,7 +1090,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 	if (child->size() == 0) {
 		std::cout<<"child size = 0\n";
 		Boomerang::get()->alert_decompiling(this);
-        std::cout << std::setw(indent) << " " << "decompiling " << getName() << " ABC\n";
+        std::cout << std::setw(indent) << " " << "decompiling " << getName() << "\n";
 		std::cerr<<"AFTER initialise"<<std::endl;
 		initialiseDecompile();					// Sort the CFG, number statements, etc
 		
@@ -2894,6 +2894,7 @@ Exp* UserProc::newLocal(Type* ty, Exp* e, char* nam /* = NULL */) {
 
 void UserProc::addLocal(Type *ty, const char *nam, Exp *e)
 {
+    std::cout<<"ADD LOCAL "<<nam<<std::endl;
 	// symbolMap is a multimap now; you might have r8->o0 for integers and r8->o0_1 for char*
 	//assert(symbolMap.find(e) == symbolMap.end());
 	mapSymbolTo(e, Location::local(strdup(nam), this));

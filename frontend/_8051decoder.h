@@ -11,6 +11,7 @@ struct DecodeResult;
 extern std::map<ADDRESS,const char*> namesList;
 extern std::map<ADDRESS,bool> funcsType;
 extern std::list<char*> bitReg;
+extern std::list<UnionDefine*>* unionDefine;
 class _8051Decoder : public NJMCDecoder
 {
 public:
@@ -32,7 +33,7 @@ virtual int			decodeAssemblyInstruction (ADDRESS pc, int delta);
 
 
 private:
-		unsigned magic_process(std::string name);
+        unsigned magic_process(std::string name);
 		/*
 		 * Various functions to decode the operands of an instruction into an Exp* representation.
 		 */

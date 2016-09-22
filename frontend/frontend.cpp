@@ -65,6 +65,7 @@ AssHandler* ass_handler;
 std::map<ADDRESS,const char*> namesList;
 std::map<ADDRESS,bool> funcsType;
 std::list<char*> bitReg;
+std::list<UnionDefine*>* unionDefine;
 bool first_line;
 /*==============================================================================
  * FUNCTION:	  FrontEnd::FrontEnd
@@ -92,11 +93,12 @@ FrontEnd* FrontEnd::instantiate(BinaryFile *pBF, Prog* prog, BinaryFileFactory* 
 				std::cout<<"instantiate 8051\n";
 				ass_handler = new AssHandler();
 				AssProgram = ass_handler->process(prog->getPath());
-				list<AssemblyLabel*>::iterator lbi;
+                list<AssemblyLabel*>::iterator lbi;
 				for(lbi = AssProgram->labelList->begin(); lbi != AssProgram->labelList->end(); ++lbi ){
 					namesList[(*lbi)->address] = (*lbi)->name;
 				}
-				bitReg = AssProgram->bitReg;
+                bitReg = AssProgram->bitReg;
+                unionDefine = AssProgram->unionDefine;
 				return new _8051FrontEnd(pBF,prog, pbff);
 			}
 		case MACHINE_PPC:
@@ -133,6 +135,12 @@ const char *FrontEnd::getRegName(int idx) {
 	for (it = decoder->getRTLDict().RegMap.begin();	 it != decoder->getRTLDict().RegMap.end(); it++)
 		if ((*it).second == idx) 
 			return (*it).first.c_str();
+    std::map<string,int>::iterator symIt;
+    for (symIt = decoder->getSymbolTable().begin(); symIt != decoder->getSymbolTable().end(); symIt++){
+        if ((*symIt).second == idx){
+            return (*symIt).first.c_str();
+        }
+    }
 	return NULL;
 }
 
@@ -307,7 +315,7 @@ void FrontEnd::decode(Prog* prog, bool decodeMain, const char *pname) {
 		static const char *mainName[] = { "main", "WinMain", "DriverEntry" };
 		const char *name = pBF->SymbolByAddress(a);
 		std::cout<<"Proc name "<<name<<"\n";
-		if (name == NULL)
+        if (name == NULL)
 			name = mainName[0];
 		for (size_t i = 0; i < sizeof(mainName)/sizeof(char*); i++) {
 			if (!strcmp(name, mainName[i])) {
@@ -434,15 +442,16 @@ DecodeResult& FrontEnd::decodeInstruction(ADDRESS pc) {
 
 DecodeResult& FrontEnd::decodeAssemblyInstruction(ADDRESS pc,std::string line, AssemblyLine* Line) {
 		 //donbinhvn for test only
-		/*DecodeResult test = decoder->decodeAssembly(pc,line);
+        /*DecodeResult test = decoder->decodeAssembly(pc,line, Line);
 		RTL* pRtl = test.rtl;
 		std::ostringstream st;
 		std::cerr<<"before print"<<std::endl;
 		pRtl->print(st);
 		std::cerr<<"after print"<<std::endl;
 		
-		std::cerr<<"TEST RTL "<< st.str().c_str() <<std::endl;*/
-	return decoder->decodeAssembly(pc,line, Line);
+        std::cerr<<"TEST RTL "<< st.str().c_str() <<std::endl;
+        return test;//*/
+    return decoder->decodeAssembly(pc,line, Line);
 }
 
 /*==============================================================================
@@ -684,11 +693,11 @@ bool FrontEnd::processProc(ADDRESS uAddr, UserProc* pProc, std::ofstream &os, bo
 			}
 			
 			// Display RTL representation if asked
-			if (Boomerang::get()->printRtl) {
+
 				std::ostringstream st;
 				pRtl->print(st);
-				LOG << st.str().c_str();
-			}
+                std::cout << st.str().c_str();
+
 	
 			ADDRESS uDest;
 

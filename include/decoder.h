@@ -109,6 +109,7 @@ public:
 		 * Constructor and destructor
 		 */
 					NJMCDecoder(Prog* prog);
+
 virtual				~NJMCDecoder() {};
 
 		/*
@@ -124,6 +125,7 @@ virtual DecodeResult& decodeAssembly (ADDRESS pc, std::string instr, AssemblyLin
 virtual int decodeAssemblyInstruction (ADDRESS pc, int delta) = 0;
 
 		RTLInstDict& getRTLDict() { return RTLDict; }
+                std::map<string,int> getSymbolTable(){return symbolTable;}
 
 		void		computedJump(const char* name, int size, Exp* dest, ADDRESS pc, std::list<Statement*>* stmts,
 						DecodeResult& result);
@@ -132,6 +134,7 @@ virtual int decodeAssemblyInstruction (ADDRESS pc, int delta) = 0;
 						DecodeResult& result);
 
 		Prog*		getProg() {return prog;}
+
 
 protected:
 
@@ -176,6 +179,8 @@ protected:
 		// Public dictionary of instruction patterns, and other information summarised from the SSL file
 		// (e.g. source machine's endianness)
 		RTLInstDict	RTLDict;
+                std::map<string,int> symbolTable;
+                std::map<char*, AssemblyArgument> defined;
 };
 
 // Function used to guess whether a given pc-relative address is the start of a function

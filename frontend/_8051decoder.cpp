@@ -33,9 +33,10 @@ inline bool isInteger(const std::string & s) {
 #include "proc.h"
 #include "_8051decoder.h"
 #include "rtl.h"
-#include "BinaryFile.h"     
+#include "BinaryFile.h"
 #include "boomerang.h"
 
+std::map<char*, AssemblyArgument> defined1;
 unsigned _8051Decoder::magic_process(std::string name) {
 
     if (name == "R0") return 0;
@@ -70,11 +71,31 @@ unsigned _8051Decoder::magic_process(std::string name) {
     else if (name == "IE") return 28;
     else if (name == "IP") return 29;
     else if (name == "PSW") return 30;
-    else 
-        return 999;
+    else
+    {
+        if (symbolTable.find(name) == symbolTable.end()){
+            bool existed = false;
+            int num;
+            do{
+                num = std::rand()%100+31;
+                map<string, int>::iterator it;
+                for (it = symbolTable.begin(); it!=symbolTable.end(); it++){
+                    if ((*it).second == num){
+                        existed = true;
+                        continue;
+                    }
+                }
+            } while (existed);
+            symbolTable[name] = num;
+            return num;
+        } else {
+            return symbolTable.find(name)->second;
+        }
+    }
 }
 
-unsigned map_sfr(std::string name){
+unsigned map_sfr(std::string name, std::map<string, int>* symbolTable){
+    std::cout<<"map_sfc called";
     if (name == "R0") return 0;
     else if (name == "R1") return 1;
     else if (name == "R2") return 2;
@@ -107,8 +128,27 @@ unsigned map_sfr(std::string name){
     else if (name == "IE") return 28;
     else if (name == "IP") return 29;
     else if (name == "PSW") return 30;
-    else 
-        return 999;
+    else
+    {
+        if (symbolTable->find(name) == symbolTable->end()){
+            bool existed = false;
+            int num;
+            do{
+                num = std::rand()%100+31;
+                map<string, int>::iterator it;
+                for (it = symbolTable->begin(); it!=symbolTable->end(); it++){
+                    if ((*it).second == num){
+                        existed = true;
+                        continue;
+                    }
+                }
+            } while (existed);
+            (*symbolTable)[name] = num;
+            return num;
+        } else {
+            return symbolTable->find(name)->second;
+        }
+    }
 }
 static DecodeResult result;
 
@@ -135,16 +175,21 @@ bool if_a_byte(char * reg){
     for(br = bitReg.begin(); br != bitReg.end(); ++ br ){
         if(strcmp(reg,(*br)) == 0)
             return true;
-    }  
+    }
+    std::list<UnionDefine*>::iterator it;
+    for (it = unionDefine->begin(); it!= unionDefine->end(); ++it){
+        if (strcmp(reg, (*it)->byteVar) == 0)
+            return true;
+    }
     return false;
 }
-list<Statement*>* initial_bit_regs(){
+list<Statement*>* initial_bit_regs(std::map<string, int>* symbolTable){
     std::list<Statement*>* stmts = new list<Statement*>();
 
     // Build a Union
 
     CompoundType* ct = new CompoundType();
-      
+
     ct->addType(new SizeType(8), "bit1:1");
     ct->addType(new SizeType(8), "bit2:1");
     ct->addType(new SizeType(8), "bit3:1");
@@ -154,53 +199,102 @@ list<Statement*>* initial_bit_regs(){
     ct->addType(new SizeType(8), "bit7:1");
     ct->addType(new SizeType(8), "bit8:1");
     UnionType * ut = new UnionType();
-    ut->addType(new SizeType(8), "x");
-    ut->addType(ct,"m");
+    ut->addType(new SizeType(8), "byte");
+    ut->addType(ct,"bits");
 
     // A Register will represent a Union variable, i choose Reg31
 
-    
+
     // Now check in bitReg to match all Register that represents a byte
     std::list<char*>::iterator br;
     for(br = bitReg.begin(); br != bitReg.end(); ++ br ){
-        unsigned num = map_sfr(std::string(*br));
+        unsigned num = map_sfr(std::string(*br), symbolTable);
         ImpRefStatement * i_s = new ImpRefStatement((Type*) ut, Location::regOf(num));
         stmts->push_back(i_s);
         Assign * a_ss = new Assign((Type *) ut,(Exp *) Location::regOf(30),(Exp *) new TypedExp((Type*) ut, (Exp*) Location::regOf(num)), NULL);
         std::cout << "REPRESENT A BYTE " << a_ss->prints() << std::endl;
         stmts->push_back(a_ss);
     }
-    
+    std::list<UnionDefine*>::iterator uit;
+    for(uit = unionDefine->begin(); uit != unionDefine->end(); ++uit){
+        UnionDefine* ud = (*uit);
+        UnionType * ut_temp = new UnionType();
+        unsigned num = map_sfr(std::string(ud->byteVar), symbolTable);
+        ut_temp->addType(new SizeType(8), "byte");
+        CompoundType* ct_temp = new CompoundType();
+
+        map<char*, int>::iterator mi;
+        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
+        {
+            std::string temp(std::string((*mi).first)+":1");
+            ct_temp->addType(new SizeType(8), temp.c_str());
+        }
+        ut_temp->addType(ct_temp,"bits");
+        ImpRefStatement * i_s = new ImpRefStatement((Type*) ut_temp, Location::regOf(num));
+        stmts->push_back(i_s);
+        Assign * a_ss = new Assign((Type *) ut_temp,(Exp *) Location::regOf(30),(Exp *) new TypedExp((Type*) ut_temp, (Exp*) Location::regOf(num)), NULL);
+        std::cout << "REPRESENT A BYTE " << a_ss->prints() << std::endl;
+        stmts->push_back(a_ss);
+    }
+
     return stmts;
 }
 
+
 extern bool first_line;
 
-Exp* byte_present(char * reg){
+Exp* byte_present(char * reg, std::map<string, int>* symTable){
     Exp* exp = NULL;
-    unsigned num = map_sfr(reg);
-    exp = new Binary(opMemberAccess,Location::regOf(num), new Const("x"));
+    unsigned num = map_sfr(reg, symTable);
+    exp = new Binary(opMemberAccess,Location::regOf(num), new Const("byte"));
     return exp;
 }
-Exp* access_bit(char * reg, unsigned pos){
-    Exp* exp = NULL;
-    unsigned num = map_sfr(reg);
+Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
+    list<UnionDefine*>::iterator li;
+    bool bitVar = false;
+    for(li = unionDefine->begin(); li!=unionDefine->end(); ++li){
+        UnionDefine* temp = (*li);
+        map<char*, int>::iterator mi;
+        for (mi = temp->bitVar->begin(); mi!=temp->bitVar->end(); ++mi){
+            if (strcmp(reg, (*mi).first) == 0){
+                bitVar = true;
+                break;
+            }
+        }
+        if (bitVar){
+            Exp* exp = NULL;
+            unsigned num = map_sfr(temp->byteVar, symTable);
+            Exp * exp1 = Location::regOf(num);
+            Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("bits"));
+            exp = new Binary(opMemberAccess,exp2, new Const((*mi).first));
 
-    std::stringstream sstm;
-    sstm << "bit" << pos;
-    std::string name = sstm.str();
-    char *bit =  new char[name.length() + 1];
-    strcpy(bit, name.c_str());
- 
-    Exp * exp1 = Location::regOf(num);
-    Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("m"));
-    exp = new Binary(opMemberAccess,exp2, new Const(bit));
-    
-   
-    //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
-    return exp;
+            //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
+            //exp = Location::regOf(num);
+            //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
+            return exp;
+        }
+    }
+    if(!bitVar){
+        Exp* exp = NULL;
+        unsigned num = map_sfr(reg, symTable);
+
+        std::stringstream sstm;
+        sstm << "bit" << pos;
+        std::string name = sstm.str();
+        char *bit =  new char[name.length() + 1];
+        strcpy(bit, name.c_str());
+
+        Exp * exp1 = Location::regOf(num);
+        Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("bits"));
+        exp = new Binary(opMemberAccess,exp2, new Const(bit));
+
+        //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
+        //exp = Location::regOf(num);
+        //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
+        return exp;
+    }
 }
-Exp* binary_expr(AssemblyExpression* expr){
+Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
     Exp* exp;
     Exp* exp1;
     Exp* exp2;
@@ -212,7 +306,7 @@ Exp* binary_expr(AssemblyExpression* expr){
     for (ai = expr->argList.begin(); ai != expr->argList.end(); ++ ai){
         switch((*ai)->kind){
             case 7 : //OPERATOR
-            {  
+            {
                 if (strcmp((*ai)->value.c,"+") == 0 )
                     op = opPlus;
                 if (strcmp((*ai)->value.c,"-") == 0 )
@@ -224,39 +318,39 @@ Exp* binary_expr(AssemblyExpression* expr){
                 break;
             }
             case 6: // ID , handle as memOf
-            {   
-                op1 = map_sfr(std::string((*ai)->value.c));
+            {
+                op1 = map_sfr(std::string((*ai)->value.c), symTable);
                 if(lhs){
-                    
+
                     if (op1 <= 8)
                         exp1 = Location::regOf(op1);
-                    else 
+                    else
                         exp1 = Location::memOf(Location::regOf(op1));
                     lhs = false;
                 }
                 else{
                     if (op1 <= 8)
                         exp2 = Location::regOf(op1);
-                    else 
+                    else
                         exp2 = Location::memOf(Location::regOf(op1));
-                  
+
                 }
                 break;
             }
             case 5: // IMMEDIATE ID , handle as regOf
             {   imm = true;
-                op1 = map_sfr(std::string((*ai)->value.c));
+                op1 = map_sfr(std::string((*ai)->value.c), symTable);
                 if(lhs){
                     if (op1 <= 8)
                         exp1 = Location::regOf(op1);
-                    else 
+                    else
                         exp1 = Location::memOf(Location::regOf(op1));
                     lhs = false;
                 }
                 else{
                     if (op1 <= 8)
                         exp2 = Location::regOf(op1);
-                    else 
+                    else
                         exp2 = Location::memOf(Location::regOf(op1));
                 }
                 break;
@@ -268,24 +362,24 @@ Exp* binary_expr(AssemblyExpression* expr){
                     lhs = false;
                 }
                 else{
-                    
+
                     exp2 = new Const((*ai)->value.i);
                 }
-                
+
                 break;
             }
             case 4: //IMMEDIATE INT
-            {   
+            {
                 imm = true;
                 if(lhs){
                     exp1 = new Const((*ai)->value.i);
                     lhs = false;
                 }
                 else{
-                    
+
                     exp2 = new Const((*ai)->value.i);
                 }
-                
+
                 break;
             }
             default:
@@ -325,14 +419,15 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
         if(arg1->kind != 1){
-            exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+            //exp1 = Location::regOf(999);
+            exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
             if (if_a_byte(arg1->value.c)){
-                exp1 = byte_present(arg1->value.c);
+                exp1 = byte_present(arg1->value.c, &symbolTable);
             }
         }
         //-----EXPRESSION2, FIRST TEST THE BINARY
         ++ei;
-        
+
         AssemblyArgument* arg2 = (*ei)->argList.front();
         //---------------------------------------------------------
         unsigned op1;
@@ -340,23 +435,23 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         if(opcode == "MOV"){
             switch (arg1->kind){
                 case 3: /* MOV INDIRECT */
-                {   
+                {
                     op1 = magic_process(std::string(arg1->value.c));
                     switch (op1){
                         case 0: /* @R0 */
-                        {   
+                        {
                             if((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
+                                exp2 = binary_expr((*ei), &symbolTable);
                                 stmts = instantiate(pc, "MOV_RI0_EXP", exp2);
-                            } 
+                            }
                             else {
                                 switch (arg2->kind){
                                     case 6: /* @R0, ID */
                                     {   op2 = magic_process(arg2->value.c);
                                         exp2 = Location::regOf(op2);
                                         if(if_a_byte(arg2->value.c))
-                                            exp2 = byte_present(arg2->value.c);
-                                        
+                                            exp2 = byte_present(arg2->value.c, &symbolTable);
+
                                         if((op2 >= 9 &&  op2 <= 10) ||  op2 >= 12){/* DIRECT ID */
                                             Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(0));
                                             exp1 = Location::memOf(e2);
@@ -371,36 +466,36 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                                         break;
                                     }
                                     case 1: /* @R0, DIRECT INT */
-                                    {   
-                                        
+                                    {
+
                                         Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(0));
-                                        exp1 = Location::memOf(e2);  
+                                        exp1 = Location::memOf(e2);
                                         stmts = instantiate(pc, "MOV_RI0_DIR", exp1, Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i))));
                                         break;
                                     }
-                                    default:break; 
+                                    default:break;
                                 }
                             }
                             break;
                         }
                         case 1: /* @R1 */
-                        {   
+                        {
                             if((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
+                                exp2 = binary_expr((*ei), &symbolTable);
                                 stmts = instantiate(pc, "MOV_RI1_EXP", exp2);
-                            } 
-                            else { 
+                            }
+                            else {
                                 switch (arg2->kind){
                                     case 6: /* ID */
                                     {
                                         op2 = magic_process(arg2->value.c);
                                         exp2 = Location::regOf(op2);
                                         if(if_a_byte(arg2->value.c))
-                                            exp2 = byte_present(arg2->value.c);
+                                            exp2 = byte_present(arg2->value.c, &symbolTable);
 
                                         if((op2 >= 9 &&  op2 <= 10) ||  op2 >= 12){/* DIRECT ID */
                                             Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(1));
-                                            exp1 = Location::memOf(e2);                                        
+                                            exp1 = Location::memOf(e2);
                                             stmts = instantiate(pc, "MOV_RI1_DIR",exp1,Location::memOf(exp2));
                                         }
                                         else if(op2 == 8) /* A */
@@ -412,14 +507,14 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                                         break;
                                     }
                                     case 1: /* DIRECT INT */
-                                    {   
+                                    {
                                         Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(1));
-                                        exp1 = Location::memOf(e2);  
+                                        exp1 = Location::memOf(e2);
                                         stmts = instantiate(pc, "MOV_RI1_DIR", exp1, Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i))));
                                         break;
                                     }
                                     default:
-                                        break; 
+                                        break;
                                 }
                             }
                             break;
@@ -433,20 +528,20 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                     break;
                 }
                 case 6: /* MOV Rn | A | DPTR | DIRECT */
-                {       
+                {
                         op1 = magic_process(std::string(arg1->value.c));
                         if (op1 < 8){ /* MOV Rn */
                             if((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
+                                exp2 = binary_expr((*ei), &symbolTable);
                             }
                             else {
                                 switch(arg2->kind){
-                                    case 6: 
+                                    case 6:
                                     { /* Rn, ID */
                                         op2 = magic_process(std::string(arg2->value.c));
                                         Exp* temp = Location::regOf(op2);
                                         if(if_a_byte(arg2->value.c))
-                                            temp = byte_present(arg2->value.c);
+                                            temp = byte_present(arg2->value.c, &symbolTable);
                                         if ((op2 >= 9 && op2 <= 10) || op2 >= 12){ /* RN, DIRECT */
 
                                             exp2 = Location::memOf(temp);
@@ -457,12 +552,12 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                                         break;
                                     }
                                     case 4: /* RN, IMM */
-                                    {   exp2  =  new Const(arg2->value.i);  
+                                    {   exp2  =  new Const(arg2->value.i);
                                         break;
                                     }
                                     case 1: /* Rn, Direct int */
                                     {
-                                        exp2  =  Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i))); 
+                                        exp2  =  Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i)));
                                         break;
                                     }
                                     default:
@@ -473,13 +568,13 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                         }
                         else if (op1 == 8){ /* MOV A */
                             if ((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
+                                exp2 = binary_expr((*ei), &symbolTable);
                                 stmts = instantiate(pc, "MOV_EXP", exp1, exp2);
                             }
                             else{
                                 switch(arg2->kind){
                                     case 3: /* A, INDIRECT */
-                                    {   
+                                    {
                                         op2 = magic_process(std::string(arg2->value.c));
                                         Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(op2));
                                         exp2 = Location::memOf(new TypedExp((Type *) direct_type, e2));
@@ -495,12 +590,12 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                                         if(op2 < 8){ /* A, Rn*/
                                             exp2 = Location::regOf(op2);
                                             if (if_a_byte(arg2->value.c))
-                                                exp2 = byte_present(arg2->value.c);
+                                                exp2 = byte_present(arg2->value.c, &symbolTable);
                                         }
                                         else if ((op2 >= 9 && op2 <= 10) || op2 >= 12){ /* A, DIRECT */
                                             Exp * temp = Location::regOf(op2);
                                             if (if_a_byte(arg2->value.c))
-                                                temp = byte_present(arg2->value.c);
+                                                temp = byte_present(arg2->value.c, &symbolTable);
                                             exp2 = Location::memOf(temp);
                                         }
                                         stmts = instantiate(pc, "MOV_EXP", exp1, exp2);
@@ -524,71 +619,71 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                         }
                         else if (op1 == 11 ){ /* MOV DPTR */
                             if ((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
-                                stmts = instantiate(pc,"MOV_DPTR_ADDR16", exp1, exp2); 
+                                exp2 = binary_expr((*ei), &symbolTable);
+                                stmts = instantiate(pc,"MOV_DPTR_ADDR16", exp1, exp2);
                             }
                             else
-                                stmts = instantiate(pc,"MOV_DPTR_ADDR16", exp1, new Const(arg2->value.i)); 
+                                stmts = instantiate(pc,"MOV_DPTR_ADDR16", exp1, new Const(arg2->value.i));
                         }
                         else if ((op1 >= 9 && op1 <= 10) || op1 >= 12){ /* MOV DIRECT */
                             Exp * new_exp1 = Location::memOf(exp1);
                             if((*ei)->kind == 2){
-                                exp2 = binary_expr((*ei));
+                                exp2 = binary_expr((*ei), &symbolTable);
                                 stmts = instantiate(pc, "MOV_EXP", new_exp1, exp2);
                             }
                             else {
                                 switch(arg2->kind){
                                     case 3: /* DIRECT, INDIRECT*/
-                                    {   
+                                    {
                                         op2 = magic_process(std::string(arg2->value.c));
                                         Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(op2));
                                         exp2 = Location::memOf(new TypedExp((Type *) direct_type, e2));
                                         if (op2 == 0)
-                                            stmts = instantiate(pc, "MOV_DIR_RI0", new_exp1, exp2); 
+                                            stmts = instantiate(pc, "MOV_DIR_RI0", new_exp1, exp2);
                                         else if(op2 == 1)
-                                            stmts = instantiate(pc, "MOV_DIR_RI1", new_exp1, exp2); 
+                                            stmts = instantiate(pc, "MOV_DIR_RI1", new_exp1, exp2);
                                         break;
                                     }
                                     case 6: /* DIRECT, Rn | DIRECT ID*/
-                                    {   
+                                    {
                                         op2 = magic_process(std::string(arg2->value.c));
                                         if (op2 <= 8 ){ /* DIRECT, Rn | A */
                                             exp2 = Location::regOf(op2);
                                             if(if_a_byte(arg2->value.c))
-                                                exp2 = byte_present(arg2->value.c);
+                                                exp2 = byte_present(arg2->value.c, &symbolTable);
                                         }
                                         else if ((op2 >= 9 && op2 <= 10) || op2 >= 12){ /* DIRECT, DIRECT */
                                             Exp* temp = Location::regOf(op2);
                                             if(if_a_byte(arg2->value.c))
-                                                temp = byte_present(arg2->value.c);
+                                                temp = byte_present(arg2->value.c, &symbolTable);
                                             exp2 = Location::memOf(temp);
                                         }
                                         stmts = instantiate(pc, "MOV_EXP", new_exp1, exp2);
                                         break;
                                     }
                                     case 1: /* DIRECT, DIRECT INT */
-                                    {   
+                                    {
                                         exp2 = Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i)));
                                         stmts = instantiate(pc, "MOV_EXP", new_exp1, exp2);
                                         break;
                                     }
                                     case 4: /* DIRECT, IMM */
-                                    {   
+                                    {
                                         exp2 = new Const(arg2->value.i);
                                         stmts = instantiate(pc, "MOV_EXP", new_exp1, exp2);
                                         break;
                                     }
                                     default:
-                                        break;   
+                                        break;
                                 }
                             }
-                        }   
+                        }
                     break;
                 }
                 case 1: /* DIRECT INT*/
-                {   
+                {
                     Exp * new_exp1 = Location::memOf(new Const(arg1->value.i));
-                    exp2 = Location::memOf(Location::regOf(map_sfr(std::string(arg2->value.c))));
+                    exp2 = Location::memOf(Location::regOf(map_sfr(std::string(arg2->value.c), &symbolTable)));
                     stmts = instantiate(pc, "MOV_EXP", new_exp1, exp2);
                     break;
                 }
@@ -611,9 +706,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             switch(arg1->kind){
                 case 3: /* MOVX INDIRECT, A*/
                 {   op1 = magic_process(std::string(arg1->value.c));
-                    exp2 = Location::regOf(map_sfr(std::string(arg2->value.c)));
+                    exp2 = Location::regOf(map_sfr(std::string(arg2->value.c), &symbolTable));
                     if(if_a_byte(arg2->value.c))
-                        exp2 = byte_present(arg2->value.c);
+                        exp2 = byte_present(arg2->value.c, &symbolTable);
                     if (op1 == 0)
                         stmts = instantiate(pc, "MOVX_RI0_A",exp2);
                     else if (op1 == 1 )
@@ -661,30 +756,30 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                 break;
             }
         }
-        result.rtl->appendStmt(new ReturnStatement); 
+        result.rtl->appendStmt(new ReturnStatement);
         result.type = DD;
     }
     else if (opcode == "JNB" || opcode == "JB" || opcode == "JBC") {
         ei = Line->expList->begin();
-        AssemblyArgument* arg1 = (*ei)->argList.front();      
+        AssemblyArgument* arg1 = (*ei)->argList.front();
         if (opcode == "JB")
-            stmts = instantiate(pc, "JB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos), new Const(100));
+            stmts = instantiate(pc, "JB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable), new Const(100));
         else if (opcode == "JNB")
-            stmts = instantiate(pc, "JNB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos), new Const(100));
-        else if (opcode == "JBC"){} //TODO: 
+            stmts = instantiate(pc, "JNB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable), new Const(100));
+        else if (opcode == "JBC"){} //TODO:
             //stmts = instantiate(pc, "JBC_DIR_IMM", new Const(arg1->value.i), new Const(100));
- 
-        result.rtl = new RTL(pc, stmts); 
-        BranchStatement* jump = new BranchStatement; 
-        result.rtl->appendStmt(jump); 
-        result.numBytes = 4; 
+
+        result.rtl = new RTL(pc, stmts);
+        BranchStatement* jump = new BranchStatement;
+        result.rtl->appendStmt(jump);
+        result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JE);
     }
     else if (opcode == "SETB"){
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        stmts = instantiate(pc, "SETB_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos));        
+        stmts = instantiate(pc, "SETB_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
     }
     else if (opcode == "ORL" || opcode == "ANL" || opcode == "XRL") {
         stringstream ss;
@@ -697,9 +792,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
 
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
 
         ei++;
@@ -734,24 +829,24 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                             break;
                         }
                         case 6: /*A, Rn | DIRECT ID*/
-                        {   
+                        {
                             op2 = magic_process(arg2->value.c);
                             if (op2 < 8){
                                 exp2 = Location::regOf(op2);
                                 if(if_a_byte(arg2->value.c))
-                                    exp2 = byte_present(arg2->value.c);
+                                    exp2 = byte_present(arg2->value.c, &symbolTable);
                             }
                             else if (op2 >= 9){
                                 Exp * temp = Location::regOf(op2);
                                 if(if_a_byte(arg2->value.c))
-                                    temp = byte_present(arg2->value.c);
+                                    temp = byte_present(arg2->value.c, &symbolTable);
                                 exp2 = Location::memOf(temp);
                             }
                             stmts = instantiate(pc,name, exp1,exp2);
                             break;
                         }
                         case 1: /* A, DIRECT INT */
-                        {   
+                        {
                             exp2 = Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i)));
                             stmts = instantiate(pc,name, exp1,exp2);
                             break;
@@ -770,10 +865,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                     Exp* new_exp1 = Location::memOf(exp1);
                     switch(arg2->kind){
                         case 6: /*JUST DIRECT, A*/
-                        {   
-                            exp2 = Location::regOf(map_sfr(std::string(arg2->value.c)));
+                        {
+                            exp2 = Location::regOf(map_sfr(std::string(arg2->value.c), &symbolTable));
                             if (if_a_byte(arg2->value.c))
-                                exp2 = byte_present(arg2->value.c);
+                                exp2 = byte_present(arg2->value.c, &symbolTable);
                             stmts = instantiate(pc,name, new_exp1,exp2);
                             break;
                         }
@@ -786,10 +881,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                         default:
                             break;
                     }
-                }    
+                }
                 break;
             }
-          
+
             default:
                 break;
         }
@@ -808,7 +903,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                 break;
             }
             case 8: /* BIT */
-            {   stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos));  
+            {   stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
                 break;
             }
             default:
@@ -823,7 +918,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         bool is_lib = false;
         ADDRESS address;
         std::map<ADDRESS, const char*>::iterator it;
-       
+
         for(it = namesList.begin();it != namesList.end(); ++it ){
             if (strcmp(it->second,arg1->value.c) == 0){
                 address = it->first;
@@ -853,9 +948,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
 
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
 
         ei++;
@@ -864,8 +959,8 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
 
         switch(arg2->kind){
             case 3: /* A, INDIRECT */
-            {   
-                op2 = map_sfr(std::string(arg2->value.c));
+            {
+                op2 = map_sfr(std::string(arg2->value.c), &symbolTable);
                 Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(op2));
                 exp2 = Location::memOf(new TypedExp((Type *) direct_type, e2));
                 if (op2 == 0){
@@ -873,63 +968,63 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                         stmts = instantiate(pc,"ADD_A_EXP", exp1, exp2);
                     else if (opcode == "SUBB")
                         stmts = instantiate(pc,"SUBB_A_EXP", exp1, exp2);
-                    else{ 
+                    else{
                         Exp * temp = Location::regOf(10);
                         if(if_a_byte("C"))
-                            temp = byte_present("C");
+                            temp = byte_present("C", &symbolTable);
                         stmts = instantiate(pc,"ADDC_A_EXP", exp1, Location::memOf(temp), exp2);
-                    } 
+                    }
                 }
                 else if (op2 == 1){
                     if (opcode == "ADD")
                         stmts = instantiate(pc,"ADD_A_EXP", exp1, exp2);
                     else if (opcode == "SUBB")
                         stmts = instantiate(pc,"SUBB_A_EXP", exp1, exp2);
-                    else{ 
+                    else{
                         Exp * temp = Location::regOf(10);
                         if(if_a_byte("C"))
-                            temp = byte_present("C");
+                            temp = byte_present("C", &symbolTable);
                         stmts = instantiate(pc,"ADDC_A_EXP", exp1, Location::memOf(temp), exp2);
-                    } 
+                    }
                 }
-                     
+
                 break;
             }
             case 6: /* A, Rn | Direct ID */
             {
-                op2 = map_sfr(std::string(arg2->value.c));
+                op2 = map_sfr(std::string(arg2->value.c), &symbolTable);
                 if (op2 < 8){ //Rn
                     exp2 = Location::regOf(op2);
                     if (if_a_byte(arg2->value.c))
-                        exp2 = byte_present(arg2->value.c);
+                        exp2 = byte_present(arg2->value.c, &symbolTable);
                 }
                 else if (op2 >= 9){ //Direct
                     exp2 = Location::regOf(op2);
                     if (if_a_byte(arg2->value.c))
-                        exp2 = byte_present(arg2->value.c);
+                        exp2 = byte_present(arg2->value.c, &symbolTable);
                     exp2 = Location::memOf(exp2);
                 }
                 if (opcode == "ADDC"){
                     Exp * temp = Location::regOf(10);
                         if(if_a_byte("C"))
-                            temp = byte_present("C");
+                            temp = byte_present("C", &symbolTable);
                     stmts = instantiate(pc,name, exp1, Location::memOf(temp), exp2);
                 }
-                else 
+                else
                     stmts = instantiate(pc,name, exp1, exp2);
 
                 break;
             }
             case 1: /*A, Direct Int */
-            {   
+            {
                 exp2 = Location::memOf(new TypedExp((Type *) direct_type, new Const(arg2->value.i)));
                 if (opcode == "ADDC"){
                     Exp * temp = Location::regOf(10);
                         if(if_a_byte("C"))
-                            temp = byte_present("C");
+                            temp = byte_present("C", &symbolTable);
                     stmts = instantiate(pc,name, exp1, Location::memOf(temp), exp2);
                 }
-                else 
+                else
                     stmts = instantiate(pc,name, exp1, exp2);
                 break;
             }
@@ -939,33 +1034,33 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                 if (opcode == "ADDC"){
                     Exp * temp = Location::regOf(10);
                         if(if_a_byte("C"))
-                            temp = byte_present("C");
+                            temp = byte_present("C", &symbolTable);
                     stmts = instantiate(pc,name, exp1, Location::memOf(temp), exp2);
                 }
-                else 
+                else
                     stmts = instantiate(pc,name, exp1, exp2);
                 break;
             }
             default:
                 break;
         }
-        
+
     }
     else if (opcode == "RR" || opcode == "RRC" || opcode == "RLC") {
         Exp* exp1;
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
         if(arg1->kind != 1){
-            exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+            exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
             if (if_a_byte(arg1->value.c)){
-                exp1 = byte_present(arg1->value.c);
+                exp1 = byte_present(arg1->value.c, &symbolTable);
             }
         }
         if(opcode == "RR")
             stmts = instantiate(pc,"RR_A", exp1);
         else if(opcode == "RRC")
             stmts = instantiate(pc,"RRC_A", exp1);
-        else 
+        else
             stmts = instantiate(pc,"RLC_A", exp1);
     }
     else if (opcode == "DEC" || opcode == "INC") {
@@ -980,15 +1075,15 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
 
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
         unsigned op1, op2;
-        op1 =  map_sfr(std::string(arg1->value.c));
+        op1 =  map_sfr(std::string(arg1->value.c), &symbolTable);
         switch(arg1->kind){
             case 3: /*INDIRECT*/
-            {   
+            {
                 Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(op1));
                 exp1 = Location::memOf(Location::regOf(op1));
                 exp2 = Location::memOf(new TypedExp((Type *) direct_type, e2));
@@ -1027,17 +1122,17 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         Exp * exp1;
         exp1 = Location::regOf(10);
         if(if_a_byte("C"))
-            exp1 = byte_present("C");
-        exp1 =  Location::memOf(exp1);      
+            exp1 = byte_present("C", &symbolTable);
+        exp1 =  Location::memOf(exp1);
         if (opcode == "JC")
             stmts = instantiate(pc, "JC_IMM", exp1);
         else if (opcode == "JNC")
             stmts = instantiate(pc, "JNC_IMM", exp1);
- 
-        result.rtl = new RTL(pc, stmts); 
-        BranchStatement* jump = new BranchStatement; 
-        result.rtl->appendStmt(jump); 
-        result.numBytes = 4; 
+
+        result.rtl = new RTL(pc, stmts);
+        BranchStatement* jump = new BranchStatement;
+        result.rtl->appendStmt(jump);
+        result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JE);
     }
@@ -1047,9 +1142,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         exp1 = Location::regOf(8);
         exp2 = Location::regOf(9);
         if (if_a_byte("A"))
-            exp1 = byte_present("A");
+            exp1 = byte_present("A", &symbolTable);
         if (if_a_byte("B"))
-            exp1 = byte_present("B");
+            exp1 = byte_present("B", &symbolTable);
         if (opcode == "DIV")
             stmts = instantiate(pc, "DIV_AB", exp1, Location::memOf(exp2));
         if (opcode == "MUL")
@@ -1063,10 +1158,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             stmts = instantiate(pc,"CPL_BIT", Location::memOf(new Const(arg1->value.i)));
         }
         else {
-            unsigned op1 = map_sfr(std::string(arg1->value.c));
+            unsigned op1 = map_sfr(std::string(arg1->value.c), &symbolTable);
             exp1 = Location::regOf(op1);
             if(if_a_byte(arg1->value.c))
-                exp1 = byte_present(arg1->value.c);
+                exp1 = byte_present(arg1->value.c, &symbolTable);
 
             if (op1 == 8){
                 stmts = instantiate(pc,"CPL_A", exp1);
@@ -1076,7 +1171,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                 stmts = instantiate(pc,"CPL_DIR", exp1);
             }
         }
-        
+
     }
     else if (opcode == "JZ" || opcode == "JNZ") {
         ei = Line->expList->begin();
@@ -1084,16 +1179,16 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         Exp * exp1;
         exp1 = Location::regOf(8);
         if(if_a_byte("A"))
-            exp1 = byte_present("A");      
+            exp1 = byte_present("A", &symbolTable);
         if (opcode == "JZ")
             stmts = instantiate(pc, "JZ_IMM", exp1);
         else if (opcode == "JNZ")
             stmts = instantiate(pc, "JNZ_IMM", exp1);
- 
-        result.rtl = new RTL(pc, stmts); 
-        BranchStatement* jump = new BranchStatement; 
-        result.rtl->appendStmt(jump); 
-        result.numBytes = 4; 
+
+        result.rtl = new RTL(pc, stmts);
+        BranchStatement* jump = new BranchStatement;
+        result.rtl->appendStmt(jump);
+        result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JE);
     }
@@ -1103,17 +1198,17 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         //-----EXPRESSION1, ALWAYS AN ID----------------------------
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
         ++ei;
         AssemblyArgument* arg2 = (*ei)->argList.front();
         unsigned op1, op2;
         switch(arg1->kind){
             case 3: /*INDIRECT , IMM*/
-            {   
-                op1 = map_sfr(std::string(arg1->value.c));
+            {
+                op1 = map_sfr(std::string(arg1->value.c), &symbolTable);
                 if (op1 == 0)
                     stmts = instantiate(pc,"CJNE_RI0", new Const(arg2->value.i));
                 if (op1 == 1)
@@ -1121,11 +1216,11 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                 break;
             }
             case 6: /*A, Rn*/
-            {   
-                op1 = map_sfr(std::string(arg1->value.c));
+            {
+                op1 = map_sfr(std::string(arg1->value.c), &symbolTable);
                 if (op1 <= 7){ //Rn
                     stmts = instantiate(pc,"CJNE_EXP", exp1, new Const(arg2->value.i));
-                }   
+                }
                 else { //A
                     switch(arg2->kind){
                         case 1: // A, Direct int
@@ -1133,10 +1228,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                             break;
                         }
                         case 6: //A, Direct ID
-                        {   op2 = map_sfr(std::string(arg2->value.c));
+                        {   op2 = map_sfr(std::string(arg2->value.c), &symbolTable);
                             exp2 = Location::regOf(op2);
                             if(if_a_byte(arg2->value.c))
-                                exp2 = byte_present(arg2->value.c);
+                                exp2 = byte_present(arg2->value.c, &symbolTable);
                             exp2 = Location::memOf(exp2);
                             stmts = instantiate(pc,"CJNE_EXP", exp1, exp2);
                             break;
@@ -1154,10 +1249,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             default:
                 break;
         }
-        result.rtl = new RTL(pc, stmts); 
-        BranchStatement* jump = new BranchStatement; 
-        result.rtl->appendStmt(jump); 
-        result.numBytes = 4; 
+        result.rtl = new RTL(pc, stmts);
+        BranchStatement* jump = new BranchStatement;
+        result.rtl->appendStmt(jump);
+        result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JE);
     }
@@ -1167,9 +1262,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         //-----EXPRESSION1, ALWAYS AN ID----------------------------
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
         ++ei;
         AssemblyArgument* arg2 = (*ei)->argList.front();
@@ -1180,19 +1275,19 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             loop = true;
         switch(arg1->kind){
             case 6: /*Rn, Direct*/
-            {   
-                op1 = map_sfr(std::string(arg1->value.c));
+            {
+                op1 = map_sfr(std::string(arg1->value.c), &symbolTable);
                 if (op1 <= 7){ //Rn
                     if (!loop)
                         stmts = instantiate(pc,"DJNZ_EXP", exp1);
                     else
                         stmts = instantiate(pc,"DJNZ_EXP_LOOP", exp1);
-                }   
+                }
                 else {// Direct
                     exp1 = Location::memOf(exp1);
                     if (!loop)
                         stmts = instantiate(pc,"DJNZ_EXP", exp1);
-                    else 
+                    else
                         stmts = instantiate(pc,"DJNZ_EXP_LOOP", exp1);
                 }
                 break;
@@ -1200,10 +1295,10 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             default:
                 break;
         }
-        result.rtl = new RTL(pc, stmts); 
-        BranchStatement* jump = new BranchStatement; 
-        result.rtl->appendStmt(jump); 
-        result.numBytes = 4; 
+        result.rtl = new RTL(pc, stmts);
+        BranchStatement* jump = new BranchStatement;
+        result.rtl->appendStmt(jump);
+        result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JNE);
     }
@@ -1219,7 +1314,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
     else if (opcode == "SWAP"){
         Exp* exp1 = Location::regOf(8);
         if(if_a_byte("A"))
-            exp1 = byte_present("A");
+            exp1 = byte_present("A", &symbolTable);
         stmts = instantiate(pc,"SWAP_A", exp1);
     }
     else if (opcode == "XCH"){
@@ -1228,36 +1323,36 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         //-----EXPRESSION1, ALWAYS AN ID----------------------------
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c)));
+        exp1 = Location::regOf(map_sfr(std::string(arg1->value.c), &symbolTable));
         if (if_a_byte(arg1->value.c)){
-            exp1 = byte_present(arg1->value.c);
+            exp1 = byte_present(arg1->value.c, &symbolTable);
         }
         //-----EXPRESSION2, FIRST TEST THE BINARY
         ++ei;
-        
+
         AssemblyArgument* arg2 = (*ei)->argList.front();
         //---------------------------------------------------------
         unsigned op1;
         unsigned op2;
         switch(arg2->kind){
             case 3: //A, INDIRECT
-            {   op2 = map_sfr(std::string(arg2->value.c));
+            {   op2 = map_sfr(std::string(arg2->value.c), &symbolTable);
                 Ternary* e2 = new Ternary(opZfill, new Const(16), new Const(31), Location::regOf(op2));
                 exp2 = Location::memOf(new TypedExp((Type *) direct_type, e2));
                 if (op2 == 0){
                     stmts = instantiate(pc,"XCH_EXP_EXP", exp1, exp2, Location::memOf(Location::regOf(op2)));
                 }
                 else{
-                    stmts = instantiate(pc,"XCH_EXP_EXP", exp1, exp2, Location::memOf(Location::regOf(op2)));   
+                    stmts = instantiate(pc,"XCH_EXP_EXP", exp1, exp2, Location::memOf(Location::regOf(op2)));
                 }
                 break;
             }
             case 6: //A, Rn|DIRECT ID
-            {   
-                op2 = map_sfr(string(arg2->value.c));
+            {
+                op2 = map_sfr(string(arg2->value.c), &symbolTable);
                 exp2 = Location::regOf(op2);
                 if (if_a_byte(arg2->value.c))
-                    exp2 = byte_present(arg2->value.c);
+                    exp2 = byte_present(arg2->value.c, &symbolTable);
                 if(op2 > 7)
                     exp2 = Location::memOf(exp2);
                 stmts = instantiate(pc,"XCH_EXP", exp1, exp2);
@@ -1275,7 +1370,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
     else if (opcode == "RL"){
         Exp* exp1 = Location::regOf(8);
         if(if_a_byte("A"))
-            exp1 = byte_present("A");
+            exp1 = byte_present("A", &symbolTable);
         stmts = instantiate(pc,"RL_A", exp1);
     }
     else
@@ -1291,13 +1386,13 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         result.rtl = new RTL(pc, stmts);
 
     //ADDED ONE-BYTE REGISTER at the first time
-    if(first_line){ 
-        std::list<Statement*>* temp = initial_bit_regs();
+    if(first_line){
+        std::cout<<"UNION DEFINE SIZE: "<<unionDefine->size()<<std::endl;
+        std::list<Statement*>* temp = initial_bit_regs(&symbolTable);
         std::list<Statement*>::iterator li;
         for(li = temp->begin(); li != temp->end(); ++li){
             result.rtl->appendStmt((*li));
         }
-
         first_line = false;
     }
 

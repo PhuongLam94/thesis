@@ -67,7 +67,7 @@ Boomerang *Boomerang::boomerang = NULL;
  * - The path to the executable is "./"
  * - The output directory is "./output/"
  */
-Boomerang::Boomerang() : logger(NULL), vFlag(false), printRtl(false), 
+Boomerang::Boomerang() : logger(NULL), vFlag(false), printRtl(true),
 	noBranchSimplify(false), noRemoveNull(false), noLocals(false),
 	noRemoveLabels(false), noDataflow(false), noDecompile(false), stopBeforeDecompile(false),
 	traceDecoder(false), dotFile(NULL), numToPropagate(-1),
@@ -1050,8 +1050,7 @@ Prog *Boomerang::loadAndDecodeAssembly(const char *fname, const char *pname)
 Prog *Boomerang::loadAndDecode(const char *fname, const char *pname)
 {
 	std::cout << "loading...\n";
-	std::cout<<"fname= "<<fname<<"\n pname = `\n";
-	std::cout <<"wtf im standing here\n";
+    std::cout<<"fname= "<<fname<<"\n pname = `\n";
 	Prog *prog = new Prog();
 	std::cout<<"creating a new Frontend \n";
 	//donbinhvn: doan nay se sua lai de khong load file binary len nua
@@ -1211,7 +1210,7 @@ int Boomerang::decompile(const char *fname, const char *pname)
 	if (dotFile)
 		prog->generateDotFile();
 
-	if (printAST) {
+    if (printAST) {
 		std::cout << "printing AST...\n";
 		PROGMAP::const_iterator it;
 		for (Proc *p = prog->getFirstProc(it); p; p = prog->getNextProc(it))
@@ -1220,9 +1219,9 @@ int Boomerang::decompile(const char *fname, const char *pname)
 				u->getCFG()->compressCfg();
 				u->printAST();
 			}
-	}
+    }
 
-	std::cout << "generating code.1..\n";
+    std::cout << "generating code...\n";
 	prog->generateCode();
 
 	std::cout << "output written to " << outputPath << prog->getRootCluster()->getName() << "\n";

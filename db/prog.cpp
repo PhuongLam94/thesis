@@ -190,11 +190,13 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 		cluster->closeStreams();
 	}
 	if (cluster == NULL || cluster == m_rootCluster) {
-		os.open(m_rootCluster->getOutPath("c"));
+        os.open(m_rootCluster->getOutPath("c"));
 		if (proc == NULL) {
+            std::cout<<"Proc is null\n";
 			HLLCode *code = Boomerang::get()->getHLLCode();
 			bool global = false;
 			if (Boomerang::get()->noDecompile) {
+                std::cout<<"noDecompile is true\n";
 				const char *sections[] = { "rodata", "data", "data1", 0 };
 				for (int j = 0; sections[j]; j++) {
 					std::string str = ".";
@@ -218,7 +220,9 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 				code->AddGlobal("source_endianness", new IntegerType(), new Const(getFrontEndId() != PLAT_PENTIUM));
 				os << "#include \"boomerang.h\"\n\n";
 				global = true;
-			}
+            } else {
+                std::cout << "noDecompile is false\n";
+            }
 			for (std::set<Global*>::iterator it1 = globals.begin(); it1 != globals.end(); it1++) {
 				// Check for an initial value
 				Exp *e = NULL;
@@ -234,12 +238,14 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 	// First declare prototypes for all but the first proc
 	std::list<Proc*>::iterator it = m_procs.begin();
 	bool first = true, proto = false;
+    std::cout<<m_procs.size()<<"\n";
 	for (it = m_procs.begin(); it != m_procs.end(); it++) {
 		if ((*it)->isLib()) continue;
 		if (first) {
 			first = false;
 			continue;
 		}
+        std::cout<<"test\n";
 		proto = true;
 		UserProc* up = (UserProc*)*it;
 		HLLCode *code = Boomerang::get()->getHLLCode(up);
@@ -273,11 +279,13 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 			if (cluster == NULL || cluster == up->getCluster()) {
 				up->getCluster()->openStream("c");
 				code->print(up->getCluster()->getStream());
+                up->getCluster()->getStream()<<"//phuong.lam test\n";
 			}
 		}
-	}
-
+    }
+    os << "//phuong.lam test";
 	os.close();
+
 	m_rootCluster->closeStreams();
 }
 
@@ -1288,7 +1296,7 @@ void Prog::decompile() {
 	// Start decompiling each entry point
 	std::list<UserProc*>::iterator ee;
 	for (ee = entryProcs.begin(); ee != entryProcs.end(); ++ee) {
-		std::cerr << "decompiling entry point " << (*ee)->getName() << "\n";
+        std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
 		if (VERBOSE)
 			LOG << "decompiling entry point " << (*ee)->getName() << "\n";
 		int indent = 0;
