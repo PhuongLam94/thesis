@@ -1148,6 +1148,41 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 	return child;
 }
 
+void UserProc::unionCheck() {
+
+                std::cout<<"union checking  \n";
+        if (VERBOSE)
+                LOG << "begin decompile(" << getName() << ")\n";
+
+        // Prevent infinite loops when there are cycles in the call graph (should never happen now)
+
+        if (status < PROC_DECODED)
+                // Can happen e.g. if a callee is visible only after analysing a switch statement
+                prog->reDecode(this);					// Actually decoding for the first time, not REdecoding
+
+        if (status < PROC_VISITED)
+                setStatus(PROC_VISITED); 					// We have at least visited this proc "on the way down"
+                                                // Append this proc to path
+
+        /*	*	*	*	*	*	*	*	*	*	*	*
+         *											*
+         *	R e c u r s e   t o   c h i l d r e n	*
+         *											*
+         *	*	*	*	*	*	*	*	*	*	*	*/
+
+        if (!Boomerang::get()->noDecodeChildren) {
+                std::cout<<"No Decode Childern\n";
+                BB_IT it;
+                // Recurse to children first, to perform a depth first search
+                //initialiseDecompile();
+
+                // Look at each call, to do the DFS
+                for (PBB bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)) {
+                    bb->calcReachingDef();
+                }
+        }
+}
+
 /*	*	*	*	*	*	*	*	*	*	*	*
  *											*
  *		D e c o m p i l e   p r o p e r		*
