@@ -106,8 +106,7 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 	Unary	*u = (Unary*)exp;
 	Binary	*b = (Binary*)exp;
     Ternary *t = (Ternary*)exp;
-    std::cout<<op<<"\n";
-	switch(op) {
+    switch(op) {
 		case opIntConst: {
 			int K = c->getInt();
 			if (uns && K < 0) {
@@ -228,8 +227,7 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 		case opLocal:
 			c = dynamic_cast<Const*>(u->getSubExp1());
 			assert(c && c->getOper() == opStrConst);
-            std::cout<<c->getStr()<<"\n";
-			str << c->getStr();
+            str << c->getStr();
 			break;
 		case opEquals:
 			{
@@ -396,7 +394,7 @@ void CHLLCode::appendExp(std::ostringstream& str, Exp *exp, PREC curPrec, bool u
 			openParen(str, curPrec, PREC_UNARY);
 			// annotateMemofs should have added a cast if it was needed
 			str << "*";
-            std::cout<<"abc"<<u->getSubExp1()->getOper()<<"\n";
+            //std::cout<<"abc"<<u->getSubExp1()->getOper()<<"\n";
 			appendExp(str, u->getSubExp1(), PREC_UNARY);
 			closeParen(str, curPrec, PREC_UNARY);
 			break;
@@ -1583,7 +1581,7 @@ void CHLLCode::AddProcEnd() {
  */
 void CHLLCode::AddLocal(const char *name, Type *type, bool last) {
 	std::ostringstream s;
-    std::cout<<"AAAA: "<<name;
+    //std::cout<<"AAAA: "<<name;
 	indent(s, 1);
 	appendTypeIdent(s, type, name);
 	Exp *e = m_proc->expFromSymbol(name);
@@ -1604,7 +1602,7 @@ void CHLLCode::AddLocal(const char *name, Type *type, bool last) {
 	appendLine(s);
 	locals[name] = type->clone();
 	if (last)
-		appendLine("");
+        appendLine("");
 }
 
 /**

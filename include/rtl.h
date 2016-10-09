@@ -62,6 +62,7 @@ class RTL {
 		ADDRESS		nativeAddr;							// RTL's source program instruction address
 		std::list<Statement*> stmtList;					// List of expressions in this RTL.
 public:
+                std::list<Statement*> getStmt(){return stmtList;}
 					RTL();
 					RTL(ADDRESS instNativeAddr, std::list<Statement*>* listStmt = NULL);
 					RTL(const RTL& other);					// Makes deep copy of "other"
@@ -90,7 +91,7 @@ virtual bool		accept(StmtVisitor* visitor);
 		Statement*	elementAt(unsigned i);					// Return the i'th element in RTL.
 		
 		// Statement list editing methods
-		void		appendStmt(Statement *s);				// Add s to end of RTL.
+                void		appendStmt(Statement *s, bool front=false);				// Add s to end of RTL.
 		void		prependStmt(Statement *s);				// Add s to start of RTL.
 		void		insertStmt(Statement *s, unsigned i);	// Insert s before expression at position i
 		void		insertStmt(Statement *s, iterator it);	// Insert s before iterator it

@@ -115,6 +115,7 @@ virtual				~Prog();
 		const void* getCodeInfo(ADDRESS uAddr, const char*& last, int& delta);
 
 		const char *getRegName(int idx) { return pFE->getRegName(idx); }
+                int getRegExpFromName(char* name){return pFE->getRegExpFromName(name);}
 		int getRegSize(int idx) { return pFE->getRegSize(idx); }
 
 		void		decodeEntryPoint(ADDRESS a);
@@ -139,7 +140,7 @@ virtual				~Prog();
 
 		// Do the main non-global decompilation steps
 		void		decompile();
-
+                void            unionCheck();
 		// All that used to be done in UserProc::decompile, but now done globally: propagation, recalc DFA, remove null
 		// and unused statements, compressCfg, process constants, promote signature, simplify a[m[]].
 		void		decompileProcs();

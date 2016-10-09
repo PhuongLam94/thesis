@@ -44,7 +44,6 @@
 #include "rtl.h"
 #include "prog.h"
 #include "BinaryFile.h"
-#include "frontend.h"
 #include "util.h"
 #include "signature.h"
 #include "boomerang.h"
@@ -55,6 +54,7 @@
 #include <sstream>
 #include <cstring>
 #include "procABI.cpp"
+#include "AssemblyInfo.h"
 #ifdef _WIN32
 #undef NO_ADDRESS
 #include <windows.h>
@@ -71,7 +71,7 @@ namespace dbghelp {
 #endif
 
 typedef std::map<Statement*, int> RefCounter;
-
+UnionDefine temp;
 extern char debug_buffer[];		// Defined in basicblock.cpp, size DEBUG_BUFSIZE
 
 /************************
@@ -534,7 +534,7 @@ void UserProc::printAST(SyntaxNode *a)
 	char s[1024];
 	if (a == NULL)
 		a = getAST();
-	sprintf(s, "ast%i-%s.dot", count++, getName());
+    //sprintf(s, "ast%i-%s.dot", count++, getName());
 	std::ofstream of(s);
 	of << "digraph " << getName() << " {" << std::endl;
 	of << "	 label=\"score: " << a->evaluate(a) << "\";" << std::endl;
@@ -1149,8 +1149,6 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 }
 
 void UserProc::unionCheck() {
-
-                std::cout<<"union checking  \n";
         if (VERBOSE)
                 LOG << "begin decompile(" << getName() << ")\n";
 
@@ -1163,24 +1161,16 @@ void UserProc::unionCheck() {
         if (status < PROC_VISITED)
                 setStatus(PROC_VISITED); 					// We have at least visited this proc "on the way down"
                                                 // Append this proc to path
-
-        /*	*	*	*	*	*	*	*	*	*	*	*
-         *											*
-         *	R e c u r s e   t o   c h i l d r e n	*
-         *											*
-         *	*	*	*	*	*	*	*	*	*	*	*/
-
-        if (!Boomerang::get()->noDecodeChildren) {
-                std::cout<<"No Decode Childern\n";
-                BB_IT it;
+         BB_IT it;
                 // Recurse to children first, to perform a depth first search
                 //initialiseDecompile();
 
                 // Look at each call, to do the DFS
                 for (PBB bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)) {
                     bb->calcReachingDef();
+                    bb->checkUnion(unionDefine);
                 }
-        }
+
 }
 
 /*	*	*	*	*	*	*	*	*	*	*	*
@@ -1739,11 +1729,43 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 				}
 				if (DEBUG_UNUSED)
 					LOG << "removing unused statement " << s->getNumber() << " " << s << "\n";
-				removeStatement(s);
+                bool isAssignAcc = false;
+                if (s->isAssign()){
+                    //std::cout<<"REM: "<<s->prints()<<endl;
+                    Assign* assign = (Assign*) s;
+                    if (assign->getLeft()->isRegOf() && assign->getRight()->isMemOf()
+                            && assign->getRight()->getSubExp1()->isMemberOf() &&
+                            assign->getRight()->getSubExp1()->getSubExp2()->isStrConst() &&
+                            strcmp(((Const*) assign->getRight()->getSubExp1()->getSubExp2())->getChar(), "byte") == 0 &&
+                            assign->getRight()->getSubExp1()->getSubExp1()->isSubscript() &&
+                            assign->getRight()->getSubExp1()->getSubExp1()->getSubExp1()->isRegOf()
+                            )
+                    {
+                        Location* lhs =((Location*) assign->getLeft());
+                        if (lhs->getSubExp1()->getOper() == opIntConst){
+                            Const* constLHS = (Const*) lhs->getSubExp1();
+                            if (constLHS->getInt() == 8){
+                                Exp* rhs = (Exp*) assign->getRight()->getSubExp1()->getSubExp1()->getSubExp1();
+                                char* byteVar = getRegName(rhs);
+                                list<UnionDefine*>::iterator udIt;
+                                for (udIt = unionDefine.begin(); udIt != unionDefine.end(); udIt++){
+                                    UnionDefine* ud = (*udIt);
+                                    if (strcmp(ud->byteVar, byteVar) == 0){
+                                        isAssignAcc = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!isAssignAcc){
+                removeStatement(s);
 				ll = stmts.erase(ll);	// So we don't try to re-remove it
-				change = true;
+                change = true;
 				continue;				// Don't call getNext this time
-			}
+            }
+                }
 			ll++;
 		}
 	} while (change);
@@ -2929,7 +2951,7 @@ Exp* UserProc::newLocal(Type* ty, Exp* e, char* nam /* = NULL */) {
 
 void UserProc::addLocal(Type *ty, const char *nam, Exp *e)
 {
-    std::cout<<"ADD LOCAL "<<nam<<std::endl;
+    //std::cout<<"ADD LOCAL "<<nam<<std::endl;
 	// symbolMap is a multimap now; you might have r8->o0 for integers and r8->o0_1 for char*
 	//assert(symbolMap.find(e) == symbolMap.end());
 	mapSymbolTo(e, Location::local(strdup(nam), this));
@@ -5546,6 +5568,10 @@ char* UserProc::getRegName(Exp* r) {
 	char* regName = const_cast<char*>(prog->getRegName(regNum));
 	if (regName[0] == '%') regName++;		// Skip % if %eax
 	return regName;
+}
+Exp* UserProc::getRegExpFromName(char *name){
+    Exp* exp = Location::regOf(prog->getRegExpFromName(name));
+    return exp;
 }
 
 Type* UserProc::getTypeForLocation(Exp* e) {

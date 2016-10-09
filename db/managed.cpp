@@ -367,7 +367,14 @@ void LocationSet::removeIfDefines(StatementSet& given) {
 			lset.erase(*dd);
 	}
 }
-
+bool AssignSet::removeIfDefines(Exp* given) {
+        AssignSet::iterator it;
+        for (it = begin(); it!=end(); ++it){
+            Assign* temp = (*it);
+            if ((*temp ->getLeft()) == (*given))
+                remove(temp);
+        }
+}
 // Make this set the union of itself and other
 void LocationSet::makeUnion(LocationSet& other) {
 	iterator it;

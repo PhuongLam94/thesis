@@ -146,6 +146,7 @@ virtual				~FrontEnd();
 
 		// returns a symbolic name for a register index
 		const char	*getRegName(int idx);
+                int getRegExpFromName(char* name);
 		int			 getRegSize(int idx);
 
 		// returns an enum identifer for this frontend's platform

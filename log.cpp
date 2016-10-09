@@ -118,5 +118,5 @@ void Log::tail() {
 
 void FileLogger::tail() {
 	out.seekp(-200, std::ios::end);
-	std::cerr << out;
+        //std::cerr << out;
 }

@@ -192,6 +192,7 @@ virtual int getArity() {return 0;}		// Overridden for Unary, Binary, etc
 		int			getVarIndex();
 		// True if this is a terminal
 virtual bool		isTerminal() { return false; }
+
 		// True if this is the constant "true"
 		bool		isTrue() {return op == opTrue;}
 		// True if this is the constant "false"
@@ -386,6 +387,7 @@ class Const : public Exp {
 		int			conscript;	// like a subscript for constants
 		Type*		type;		// Constants need types during type analysis
 public:
+                char* getChar(){return u.p;}
 		// Special constructors overloaded for the various constants
 					Const(int i);
 					Const(QWord ll);
@@ -864,7 +866,7 @@ virtual Exp*		clone();
 
 		void		setProc(UserProc *p) { proc = p; }
 		UserProc	*getProc() { return proc; }
-
+//virtual bool		operator==(const Exp& o) const;
 virtual Exp*		polySimplify(bool& bMod);
 virtual void		getDefinitions(LocationSet& defs);
 

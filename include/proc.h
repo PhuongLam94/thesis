@@ -34,8 +34,9 @@
 #include "memo.h"
 #include "dataflow.h"			// For class UseCollector
 #include "statement.h"			// For embedded ReturnStatement pointer, etc
-#include "boomerang.h"			// For USE_DOMINANCE_NUMS etc
-
+#include "boomerang.h"	// For USE_DOMINANCE_NUMS etc
+//#include "AssemblyInfo.h"
+#include "frontend.h"
 class Prog;
 class UserProc;
 class Cfg;
@@ -53,7 +54,7 @@ class Argument;
 class Signature;
 class Cluster;
 class XMLProgParser;
-
+class UnionDefine;
 /*==============================================================================
  * Procedure class.
  *============================================================================*/
@@ -66,6 +67,7 @@ public:
 		 * Constructor with name, native address and optional bLib.
 		 */
 		Proc(Prog *prog, ADDRESS uNative, Signature *sig);
+                std::list<UnionDefine*> unionDefine;
 
 virtual				~Proc();
 
@@ -493,6 +495,7 @@ virtual bool		isNoReturn();
 		/// path from the current entry point to the current procedure in the call graph. Pass an empty set at the top
 		/// level.  indent is the indentation level; pass 0 at the top level
 		ProcSet*	decompile(ProcList* path, int& indent);
+                void            unionCheck();
 		/// Initialise decompile: sort CFG, number statements, dominator tree, etc.
 		void		initialiseDecompile();
 		/// Prepare for preservation analysis only.
@@ -766,7 +769,8 @@ public:
 virtual void		renameParam(const char *oldName, const char *newName);
 
 		char*		getRegName(Exp* r);			/// Get a name like eax or o2 from r24 or r8
-		void		setParamType(const char* nam, Type* ty);
+                Exp*            getRegExpFromName(char* name);
+                void		setParamType(const char* nam, Type* ty);
 		void		setParamType(int idx, Type* ty);
 
 		/**

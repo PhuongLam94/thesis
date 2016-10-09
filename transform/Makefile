@@ -7,7 +7,7 @@
 # $Revision: 1.5 $
 # 18 Apr 04 - Trent: Created.
 
-top_srcdir = /home/phuong/Boomerang-Production
+top_srcdir = ..
 
 LIB_OBJS = transform.o
 LIB=$(top_srcdir)/lib/transform.so

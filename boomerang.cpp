@@ -768,6 +768,7 @@ int Boomerang::commandLine(int argc, const char **argv)
 						noDecodeChildren = true;
 						break;
 					case 'd':
+                        std::cout<<"No data flow"<<std::endl;
 						noDataflow = true;
 						break;
 					case 'D':
@@ -1220,7 +1221,7 @@ int Boomerang::decompile(const char *fname, const char *pname)
 				u->printAST();
 			}
     }
-
+    prog->unionCheck();
     std::cout << "generating code...\n";
 	prog->generateCode();
 

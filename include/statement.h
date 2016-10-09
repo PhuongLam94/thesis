@@ -143,6 +143,8 @@ protected:
 public:
 		int			getDomNumber() {return dominanceNum;}
 		void		setDomNumber(int dn) {dominanceNum = dn;}
+                AssignSet           reachIn;
+                AssignSet           reachOut;
 protected:
 #endif
 		STMT_KIND	kind;			// Statement kind (e.g. STMT_BRANCH)

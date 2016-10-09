@@ -51,6 +51,7 @@
 #include "type.h"
 #include "log.h"
 #include "visitor.h"
+#include "AssemblyInfo.h"
 
 
 /**********************************
@@ -1701,6 +1702,118 @@ bool BasicBlock::calcLiveness(ConnectionGraph& ig, UserProc* myProc) {
 		// No change
 		return false;
 }
+void BasicBlock::checkUnion(list<UnionDefine*> unionDefine){
+    std::cout<<"==============================="<<endl;
+    std::cout<<"UNION CHECKING AREA"<<endl;
+    std::list<RTL*>::iterator rit;
+    for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++){
+        std::list<Statement*>& stmts = (*rit)->getList();
+        std::list<Statement*>::iterator sit;
+        for (sit = stmts.begin(); sit!=stmts.end(); sit++){
+           Statement* statement = (*sit);
+           LocationSet used;
+           statement->addUsedLocs(used);
+           LocationSet::iterator lit;
+           Exp* prevExp = NULL;
+           for (lit = used.begin(); lit != used.end(); lit++){
+               Exp *exp =(Exp*) (*lit);
+               //std::cout<<"STATEMENT: "<<statement->prints()<<endl;
+               //std::cout<<"EXP: "<<exp->prints()<<endl;
+//               if (prevExp)
+//                std::cout<<"PREV EXP: "<<prevExp->prints()<<endl;
+               if (exp->isRegOf() && prevExp){
+                   //std::cout<<"STATEMENT: "<<statement->prints()<<endl;
+                   char * bitVar = statement->getProc()->getRegName(exp);
+                   char * byteVar = findByteVar(bitVar, unionDefine, statement->getProc());
+                   if (byteVar){
+                       AssignSet reachIn = statement->reachIn;
+                       Unary* left = (Unary*) Location::local("a", NULL);
+                       Unary* right = (Unary*)Location::memOf(new Binary(opMemberAccess,Location::local(byteVar, NULL), new Const("byte")));
+                       Assign* def = reachIn.lookupLoc(left);
+                       if (def && (*((Unary*)def->getRight()) == *right)){
+                           cout<<"STATEMENT: "<<statement->prints()<<std::endl;
+                           cout<<"\t   RULE IS FOLLOWED!"<<std::endl;
+                       } else {
+                           cout<<"STATEMENT: "<<statement->prints()<<std::endl;
+                           cout<<"\t   RULE IS BROKEN!"<<std::endl;
+                       }
+                       Assign* temp = new Assign(exp, new Const(bitVar));
+                       bool convert;
+                       statement->replaceRef(prevExp, temp, convert);
+                       Assign* temp2 = new Assign(prevExp, new Const("bits"));
+                       statement->replaceRef(exp, temp2, convert);
+                   }
+               }
+               if(exp->isRegOf() && string(statement->getProc()->getRegName(exp)).find("bits")!=string::npos)
+                prevExp = exp;
+           }
+
+        }
+    }
+    std::cout<<"==================================="<<std::endl;
+}
+char* BasicBlock::findByteVar(char* bitVar, list<UnionDefine*> unionDefine, UserProc* proc){
+    list<UnionDefine*>::iterator it;
+    for (it = unionDefine.begin(); it != unionDefine.end(); it++){
+        UnionDefine* ud = (*it);
+        map<char*, int>::iterator mit;
+        for (mit = ud->bitVar->begin(); mit != ud->bitVar->end(); mit++){
+            if (strcmp((*mit).first, bitVar) == 0){
+                return (ud->byteVar);
+            }
+        }
+    }
+    return NULL;
+}
+
+bool BasicBlock::calcReachingDef(){
+    //std::cout<<"CALC REACHING DEFINITION CALLED, NUM OF RTL: "<<m_pRtls->size()<<std::endl;
+    AssignSet reachLoc;
+    getReachIn(reachLoc);
+    std::list<RTL*>::iterator rit;
+    bool change = true;
+    if (m_pRtls)  // this can be NULL
+        while (change){
+            change = false;
+    for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++) {
+        std::list<Statement*>& stmts = (*rit)->getList();
+        //std::cout<<"NUM OF STATEMENT: "<<stmts.size()<<std::endl;
+        std::list<Statement*>::iterator sit;
+        // For each statement this RTL
+        for (sit = stmts.begin(); sit != stmts.end(); sit++) {
+            Statement* s = *sit;
+            s->reachIn = reachLoc;
+            if (s->isAssign()){
+                LocationSet defs;
+                s->getDefinitions(defs);
+                LocationSet::iterator lit;
+                for (lit = defs.begin(); lit != defs.end(); lit++){
+                    Exp *exp =(Exp*) (*lit);
+                    reachLoc.removeIfDefines(exp);
+                }
+                reachLoc.insert((Assign*) s);
+            }
+            if (!(reachLoc == s->reachOut)){
+                 s->reachOut = reachLoc;
+                 change = true;
+            }
+//            std::cout<<"STATEMENT: "<<s->prints()<<std::endl;
+//            std::cout<<"REACH IN: "<<s->reachIn.prints()<<std::endl;
+//            std::cout<<"REACH OUT: "<<s->reachOut.prints()<<std::endl;
+        }
+    }
+        }
+    reachOut = getLastStmt()->reachOut;
+    return true;
+}
+void BasicBlock::getReachIn(AssignSet &reachIn){
+    reachIn.clear();
+    for (unsigned i = 0; i<m_InEdges.size(); i++){
+        PBB currBB = m_InEdges[i];
+        reachIn.makeUnion(currBB->reachOut);
+    }
+}
+
 
 // Locations that are live at the end of this BB are the union of the locations that are live at the start of its
 // successors

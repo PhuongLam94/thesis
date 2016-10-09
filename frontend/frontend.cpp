@@ -143,6 +143,19 @@ const char *FrontEnd::getRegName(int idx) {
     }
 	return NULL;
 }
+int FrontEnd::getRegExpFromName(char* name) {
+    std::map<std::string, int, std::less<std::string> >::iterator it;
+    for (it = decoder->getRTLDict().RegMap.begin();	 it != decoder->getRTLDict().RegMap.end(); it++)
+        if (strcmp(name, (*it).first.c_str()) == 0)
+            return (*it).second;
+    std::map<string,int>::iterator symIt;
+    for (symIt = decoder->getSymbolTable().begin(); symIt != decoder->getSymbolTable().end(); symIt++){
+        if (strcmp(name, (*symIt).first.c_str()) == 0){
+            return (*symIt).second;
+        }
+    }
+    return -1;
+}
 
 int FrontEnd::getRegSize(int idx) {
 	if (decoder->getRTLDict().DetRegMap.find(idx) == decoder->getRTLDict().DetRegMap.end())
@@ -451,6 +464,13 @@ DecodeResult& FrontEnd::decodeAssemblyInstruction(ADDRESS pc,std::string line, A
 		
         std::cerr<<"TEST RTL "<< st.str().c_str() <<std::endl;
         return test;//*/
+//    DecodeResult test = decoder->decodeAssembly(pc,line, Line);
+//    //std::cout<<"RTL: "<<test.rtl->prints()<<std::endl;
+//    list<Statement*>::iterator it;
+//    list<Statement*> listStmt = test.rtl->getStmt();
+//    for (it=listStmt.begin(); it!=listStmt.end(); it++){
+//        //std::cout<<"RTL: "<<(**it).prints()<<std::endl;
+//    }
     return decoder->decodeAssembly(pc,line, Line);
 }
 
@@ -672,7 +692,7 @@ bool FrontEnd::processProc(ADDRESS uAddr, UserProc* pProc, std::ofstream &os, bo
 				pBB = pCfg->newBB(BB_rtls, INVALID, 0);
 				sequentialDecode = false; BB_rtls = NULL; continue;
 			}
-
+            pProc->unionDefine = inst.unionDefine;
 			// alert the watchers that we have decoded an instruction
 			Boomerang::get()->alert_decode(uAddr, inst.numBytes);
 			nTotalBytes += inst.numBytes;			
@@ -693,10 +713,10 @@ bool FrontEnd::processProc(ADDRESS uAddr, UserProc* pProc, std::ofstream &os, bo
 			}
 			
 			// Display RTL representation if asked
-
+                std::cout<<"RTL: "<<std::endl;
 				std::ostringstream st;
 				pRtl->print(st);
-                std::cout << st.str().c_str();
+                std::cout << st.str().c_str()<<std::endl;
 
 	
 			ADDRESS uDest;

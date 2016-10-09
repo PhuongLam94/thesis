@@ -339,6 +339,8 @@ Exp* Location::clone() {
  * RETURNS:			True if equal
  *============================================================================*/
 bool Const::operator==(const Exp& o) const {
+
+    //std::cout<<"CONST == CALLED: "<<op<<", "<<u.i<<std::endl;
 	// Note: the casts of o to Const& are needed, else op is protected! Duh.
 	if (((Const&)o).op == opWild) return true;
 	if (((Const&)o).op == opWildIntConst && op == opIntConst) return true;
@@ -356,6 +358,7 @@ bool Const::operator==(const Exp& o) const {
 	return false;
 }
 bool Unary::operator==(const Exp& o) const {
+    //std::cout<<"UNARY == CALLED"<<std::endl;
 	if (((Unary&)o).op == opWild) return true;
 	if (((Unary&)o).op == opWildRegOf && op == opRegOf) return true;
 	if (((Unary&)o).op == opWildMemOf && op == opMemOf) return true;
@@ -365,6 +368,11 @@ bool Unary::operator==(const Exp& o) const {
 }
 bool Binary::operator==(const Exp& o) const {
     assert(subExp1 && subExp2);
+    //std::cout<<"BINARY == CALLED"<<std::endl;
+    //std::cout<<subExp1->prints()<<std::endl;
+    //std::cout<<"OP1: "<<op<<", OP2: "<<((Binary&)o).op<<std::endl;
+    //std::cout<<"subExp1: "<<subExp1->prints()<<", "<<*((Binary&)o).getSubExp1()->prints()<<std::endl;
+    //std::cout<<"subExp2: "<<subExp2->prints()<<", subExp2: "<<*((Binary&)o).getSubExp2()->prints()<<std::endl;
 	if (((Binary&)o).op == opWild) return true;
 	if (op != ((Binary&)o).op)	   return false;
 	if (!( *subExp1 == *((Binary&)o).getSubExp1())) return false;
@@ -372,6 +380,7 @@ bool Binary::operator==(const Exp& o) const {
 }
 
 bool Ternary::operator==(const Exp& o) const {
+    //std::cout<<"REFEXP == CALLED"<<std::endl;
 	if (((Ternary&)o).op == opWild) return true;
 	if (op != ((Ternary&)o).op) return false;
 	if (!( *subExp1 == *((Ternary&)o).getSubExp1())) return false;
@@ -379,6 +388,7 @@ bool Ternary::operator==(const Exp& o) const {
 	return *subExp3 == *((Ternary&)o).getSubExp3();
 }
 bool Terminal::operator==(const Exp& o) const {
+    //std::cout<<"REFEXP == CALLED"<<std::endl;
 	if (op == opWildIntConst) return ((Terminal&)o).op == opIntConst;
 	if (op == opWildStrConst) return ((Terminal&)o).op == opStrConst;
 	if (op == opWildMemOf)	  return ((Terminal&)o).op == opMemOf;
@@ -389,6 +399,7 @@ bool Terminal::operator==(const Exp& o) const {
 			(op == ((Terminal&)o).op));
 }
 bool TypedExp::operator==(const Exp& o) const {
+    //std::cout<<"REFEXP == CALLED"<<std::endl;
 	if (((TypedExp&)o).op == opWild) return true;
 	if (((TypedExp&)o).op != opTypedExp) return false;
 	// This is the strict type version
@@ -397,6 +408,7 @@ bool TypedExp::operator==(const Exp& o) const {
 }
 
 bool RefExp::operator==(const Exp& o) const {
+    //std::cout<<"REFEXP == CALLED"<<std::endl;
 	if (((RefExp&)o).op == opWild) return true;
 	if (((RefExp&)o).op != opSubscript) return false;
 	if (!( *subExp1 == *((RefExp&)o).subExp1)) return false;
@@ -410,6 +422,7 @@ bool RefExp::operator==(const Exp& o) const {
 }
 
 bool TypeVal::operator==(const Exp& o) const {
+    //std::cout<<"REFEXP == CALLED"<<std::endl;
 	if (((TypeVal&)o).op == opWild) return true;
 	if (((TypeVal&)o).op != opTypeVal) return false;
 	return *val == *((TypeVal&)o).val;

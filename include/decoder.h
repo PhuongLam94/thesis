@@ -96,6 +96,7 @@ struct DecodeResult {
 		 */
 		ADDRESS forceOutEdge;
 
+                std::list<UnionDefine*> unionDefine;
 };
 
 /*==============================================================================

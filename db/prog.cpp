@@ -283,8 +283,7 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 			}
 		}
     }
-    os << "//phuong.lam test";
-	os.close();
+    os.close();
 
 	m_rootCluster->closeStreams();
 }
@@ -1354,6 +1353,38 @@ void Prog::decompile() {
 	// Note: removeUnusedLocals() is now in UserProc::generateCode()
 
 	removeUnusedGlobals();
+}
+void Prog::unionCheck(){
+    assert(m_procs.size());
+    if (VERBOSE)
+            LOG << (int)m_procs.size() << " procedures\n";
+
+    // Start decompiling each entry point
+    std::list<UserProc*>::iterator ee;
+    for (ee = entryProcs.begin(); ee != entryProcs.end(); ++ee) {
+    std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
+            if (VERBOSE)
+                    LOG << "decompiling entry point " << (*ee)->getName() << "\n";
+            int indent = 0;
+            (*ee)->unionCheck();
+    }
+
+    // Just in case there are any Procs not in the call graph.
+    std::list<Proc*>::iterator pp;
+    if (Boomerang::get()->decodeMain && !Boomerang::get()->noDecodeChildren) {
+            bool foundone = true;
+            while (foundone) {
+                    foundone = false;
+                    for (pp = m_procs.begin(); pp != m_procs.end(); pp++) {
+                            UserProc* proc = (UserProc*)(*pp);
+                            if (proc->isLib()) continue;
+                            if (proc->isDecompiled()) continue;
+                            int indent = 0;
+                            proc->unionCheck();
+                            foundone = true;
+                    }
+            }
+    }
 }
 
 void Prog::removeUnusedGlobals() {

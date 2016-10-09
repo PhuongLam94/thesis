@@ -94,8 +94,7 @@ unsigned _8051Decoder::magic_process(std::string name) {
     }
 }
 
-unsigned map_sfr(std::string name, std::map<string, int>* symbolTable){
-    std::cout<<"map_sfc called";
+unsigned map_sfr(std::string name, std::map<string, int>* symbolTable, int byteVar = -1, int bit = -1){
     if (name == "R0") return 0;
     else if (name == "R1") return 1;
     else if (name == "R2") return 2;
@@ -134,12 +133,19 @@ unsigned map_sfr(std::string name, std::map<string, int>* symbolTable){
             bool existed = false;
             int num;
             do{
-                num = std::rand()%100+31;
+                num = std::rand()%200+31;
                 map<string, int>::iterator it;
                 for (it = symbolTable->begin(); it!=symbolTable->end(); it++){
-                    if ((*it).second == num){
+                    //std::cout<<"NUM: "<<byteVar<<", "<<bit<<", "<<num<<endl;
+                    bool cond1 = (*it).second == num;
+                    bool cond2 = (byteVar != -1 && byteVar>=num);
+                    bool cond3 = (bit != -1 && bit>=num);
+                    //std::cout<<cond1<<", "<<cond2<<", "<<cond3<<endl;
+                    if (cond1 || cond2 || cond3){
                         existed = true;
                         continue;
+                    } else {
+                        existed = false;
                     }
                 }
             } while (existed);
@@ -247,6 +253,7 @@ Exp* byte_present(char * reg, std::map<string, int>* symTable){
     Exp* exp = NULL;
     unsigned num = map_sfr(reg, symTable);
     exp = new Binary(opMemberAccess,Location::regOf(num), new Const("byte"));
+    std::cout<<"BYTE PRESENT: "<<exp->prints()<<endl;
     return exp;
 }
 Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
@@ -265,8 +272,10 @@ Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
             Exp* exp = NULL;
             unsigned num = map_sfr(temp->byteVar, symTable);
             Exp * exp1 = Location::regOf(num);
-            Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("bits"));
-            exp = new Binary(opMemberAccess,exp2, new Const((*mi).first));
+            string bits = "bits"+string(temp->byteVar);
+            unsigned num1 = map_sfr(bits.c_str(), symTable, num);
+            Exp * exp2 = new Binary(opMemberAccess,exp1, Location::regOf(num1));
+            exp = new Binary(opMemberAccess,exp2, Location::regOf(map_sfr(reg, symTable, num, num1)));
 
             //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
             //exp = Location::regOf(num);
@@ -599,6 +608,16 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
                                             exp2 = Location::memOf(temp);
                                         }
                                         stmts = instantiate(pc, "MOV_EXP", exp1, exp2);
+                                        Exp* left = Location::regOf(8);
+                                        Exp* right = Location::memOf(new Binary(opMemberAccess,Location::regOf(map_sfr(arg2->value.c, &symbolTable)), new Const("byte")));
+                                        Unary* temp1 = (Unary*) left;
+                                        Unary* temp2 = (Unary*) exp1;
+                                        bool result1 = *temp1 == *temp2;
+                                        std::cout<<"COMPARE1: "<<result1<<std::endl;
+                                        Unary* temp3 = (Unary*) right;
+                                        Unary* temp4 = (Unary*) exp2;
+                                        bool result2 = *temp3 == *temp4;
+                                        std::cout<<"COMPARE2: "<<result2<<std::endl;
                                         break;
                                     }
                                     case 4: /* A, IMM */
@@ -892,23 +911,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
     else if (opcode == "CLR") {
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
-        unsigned op1;
-        switch(arg1->kind){
-            case 6: /* A, C*/
-            {   op1 = magic_process(std::string(arg1->value.c));
-                if(op1 == 8)
-                    stmts = instantiate(pc, "CLR_A");
-                else if(op1 == 10)
-                    stmts = instantiate(pc, "CLR_C");
-                break;
-            }
-            case 8: /* BIT */
-            {   stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
-                break;
-            }
-            default:
-                break;
-        }
+        stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
     }
     else if (opcode == "NOP") {
     }
@@ -1391,11 +1394,11 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         std::list<Statement*>* temp = initial_bit_regs(&symbolTable);
         std::list<Statement*>::iterator li;
         for(li = temp->begin(); li != temp->end(); ++li){
-            result.rtl->appendStmt((*li));
+            result.rtl->appendStmt((*li), true);
         }
         first_line = false;
     }
-
+    result.unionDefine = *unionDefine;
     return result;
 }
 

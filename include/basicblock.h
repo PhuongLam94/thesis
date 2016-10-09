@@ -28,13 +28,14 @@
 #endif
 
 #include "managed.h"			// For LocationSet etc
-
+//#include "AssemblyInfo.h"
 class Location;
 class HLLCode;
 class BasicBlock;
 class RTL;
 class Proc;
 class UserProc;
+class UnionDefine;
 struct SWITCH_INFO;				// Declared in include/statement.h
 
 typedef BasicBlock* PBB;
@@ -395,6 +396,7 @@ protected:
 
 /* Liveness */
 		LocationSet	liveIn;			// Set of locations live at BB start
+                AssignSet       reachOut;
 
 public:
 
@@ -525,6 +527,10 @@ public:
 		bool		calcLiveness(ConnectionGraph& ig, UserProc* proc);
 		void		getLiveOut(LocationSet& live, LocationSet& phiLocs);
 
+                bool            calcReachingDef();
+                void            checkUnion(std::list<UnionDefine*> unionDefine);
+                char* findByteVar(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc);
+                void            getReachIn(AssignSet& reach);
 		// Find indirect jumps and calls
 		bool		decodeIndirectJmp(UserProc* proc);
 		void		processSwitch(UserProc* proc);

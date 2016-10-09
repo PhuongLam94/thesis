@@ -173,15 +173,27 @@ void RTL::deepCopyList(std::list<Statement*>& dest) {
  * PARAMETERS:		s: pointer to Statement to append
  * RETURNS:			Nothing
  *============================================================================*/
-void RTL::appendStmt(Statement* s) {
+void RTL::appendStmt(Statement* s, bool front) {
 	if (stmtList.size()) {
+        if (front){
+            if (stmtList.front()->isFlagAssgn()) {
+                iterator it = stmtList.begin();
+                stmtList.insert(it, s);
+                return;
+            }
+        } else{
 		if (stmtList.back()->isFlagAssgn()) {
 			iterator it = stmtList.end();
 			stmtList.insert(--it, s);
 			return;
 		}
+        }
 	}
+    if (front){
+        stmtList.push_front(s);
+    } else{
 	stmtList.push_back(s);
+    }
 }
 
 /*==============================================================================

@@ -97,9 +97,12 @@ typedef std::set<Assign*, lessAssign>::const_iterator const_iterator;
 		
 		void		insert(Assign* a) {aset.insert(a);}		// Insertion
 		bool		remove(Assign* a);						// Removal; rets false if not found
-		bool		removeIfDefines(Exp* given);			// Remove if given exp is defined
+                bool		removeIfDefines(Exp* given);
+                // Remove if given exp is defined
 		bool		removeIfDefines(AssignSet& given);		// Remove if any given is def'd
-		bool		exists(Assign* s);						// Search; returns false if !found
+
+                bool		removeIfDefines2(Exp* given);
+                bool		exists(Assign* s);						// Search; returns false if !found
 		bool		definesLoc(Exp* loc);					// Search; returns true if any assignment defines loc
 		Assign*		lookupLoc(Exp* loc);					// Search for loc on LHS, return ptr to Assign if found
 
