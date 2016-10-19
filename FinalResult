@@ -4,9 +4,6 @@ bb
 					 OPTIONS 
 		SETB
 					 TESTUPS1 
-		MOV
-					 A 
-					 OPTIONS2 
 		CLR
-					 TESTUPS1 
+					 A 
 		RET

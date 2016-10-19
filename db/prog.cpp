@@ -1354,7 +1354,7 @@ void Prog::decompile() {
 
 	removeUnusedGlobals();
 }
-void Prog::unionCheck(){
+bool Prog::unionCheck(){
     assert(m_procs.size());
     if (VERBOSE)
             LOG << (int)m_procs.size() << " procedures\n";
@@ -1362,11 +1362,13 @@ void Prog::unionCheck(){
     // Start decompiling each entry point
     std::list<UserProc*>::iterator ee;
     for (ee = entryProcs.begin(); ee != entryProcs.end(); ++ee) {
-    std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
+    //std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
             if (VERBOSE)
                     LOG << "decompiling entry point " << (*ee)->getName() << "\n";
             int indent = 0;
-            (*ee)->unionCheck();
+            if(!(*ee)->unionCheck())
+                return false;
+
     }
 
     // Just in case there are any Procs not in the call graph.
@@ -1380,11 +1382,13 @@ void Prog::unionCheck(){
                             if (proc->isLib()) continue;
                             if (proc->isDecompiled()) continue;
                             int indent = 0;
-                            proc->unionCheck();
+                            if(!proc->unionCheck())
+                                return false;
                             foundone = true;
                     }
             }
     }
+    return true;
 }
 
 void Prog::removeUnusedGlobals() {

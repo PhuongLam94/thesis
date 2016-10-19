@@ -151,13 +151,15 @@ protected:
 		Statement	*parent;		// The statement that contains this one
 		RangeMap	ranges;			// overestimation of ranges of locations
 		RangeMap    savedInputRanges;  // saved overestimation of ranges of locations
-
+                bool        isAccAsign = false; //to know if this is in form of a=m[xxx.byte]
+                char*       byteAssign = NULL; //if this is acc assign, this var will store the byte var
 		unsigned int lexBegin, lexEnd;
 
 public:
 
 					Statement() : pbb(NULL), proc(NULL), number(0), parent(NULL) { }
 virtual				~Statement() { }
+
 
 		// get/set the enclosing BB, etc
 		PBB			getBB() { return pbb; }
@@ -314,6 +316,11 @@ protected:
 public:
 		RangeMap    &getSavedInputRanges() { return savedInputRanges; }
 		RangeMap	getInputRanges();
+                void setAccAssign(bool a){isAccAsign = a;}
+                bool getAccAssign(){return isAccAsign;}
+                void setByteAssign(char* a){byteAssign = a;}
+                char* getByteAssign(){return byteAssign;}
+
 virtual void		rangeAnalysis(std::list<Statement*> &execution_paths);
 
 		// helper functions

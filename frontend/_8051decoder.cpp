@@ -7,6 +7,7 @@
 #include <string>
 #include <assert.h>
 #include <cstring>
+#include <regex>
 using namespace std;
 
 inline bool isInteger(const std::string & s) {
@@ -129,6 +130,15 @@ unsigned map_sfr(std::string name, std::map<string, int>* symbolTable, int byteV
     else if (name == "PSW") return 30;
     else
     {
+        bool isDefined = false;
+        map<char*, AssemblyArgument*>::iterator it;
+        for (it = replacement.begin(); it!=replacement.end(); it++){
+            if(strcmp((*it).first, name.c_str()) == 0 ){
+                isDefined = true;
+                break;
+            }
+        }
+        if (isDefined || name.find("bits") != string::npos ){
         if (symbolTable->find(name) == symbolTable->end()){
             bool existed = false;
             int num;
@@ -153,6 +163,12 @@ unsigned map_sfr(std::string name, std::map<string, int>* symbolTable, int byteV
             return num;
         } else {
             return symbolTable->find(name)->second;
+        }
+        }
+        else {
+
+            std::cout<<"ERROR: "<<name<<" HAS NOT BEEN DEFINED YET"<<endl;
+           exit(1);
         }
     }
 }
@@ -221,27 +237,27 @@ list<Statement*>* initial_bit_regs(std::map<string, int>* symbolTable){
         std::cout << "REPRESENT A BYTE " << a_ss->prints() << std::endl;
         stmts->push_back(a_ss);
     }
-    std::list<UnionDefine*>::iterator uit;
-    for(uit = unionDefine->begin(); uit != unionDefine->end(); ++uit){
-        UnionDefine* ud = (*uit);
-        UnionType * ut_temp = new UnionType();
-        unsigned num = map_sfr(std::string(ud->byteVar), symbolTable);
-        ut_temp->addType(new SizeType(8), "byte");
-        CompoundType* ct_temp = new CompoundType();
+//    std::list<UnionDefine*>::iterator uit;
+//    for(uit = unionDefine->begin(); uit != unionDefine->end(); ++uit){
+//        UnionDefine* ud = (*uit);
+//        UnionType * ut_temp = new UnionType();
+//        unsigned num = map_sfr(std::string(ud->byteVar), symbolTable);
+//        ut_temp->addType(new SizeType(8), "byte");
+//        CompoundType* ct_temp = new CompoundType();
 
-        map<char*, int>::iterator mi;
-        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
-        {
-            std::string temp(std::string((*mi).first)+":1");
-            ct_temp->addType(new SizeType(8), temp.c_str());
-        }
-        ut_temp->addType(ct_temp,"bits");
-        ImpRefStatement * i_s = new ImpRefStatement((Type*) ut_temp, Location::regOf(num));
-        stmts->push_back(i_s);
-        Assign * a_ss = new Assign((Type *) ut_temp,(Exp *) Location::regOf(30),(Exp *) new TypedExp((Type*) ut_temp, (Exp*) Location::regOf(num)), NULL);
-        std::cout << "REPRESENT A BYTE " << a_ss->prints() << std::endl;
-        stmts->push_back(a_ss);
-    }
+//        map<int,char*>::iterator mi;
+//        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
+//        {
+//            std::string temp(std::string((*mi).second)+":1");
+//            ct_temp->addType(new SizeType(8), temp.c_str());
+//        }
+//        ut_temp->addType(ct_temp,"bits");
+//        ImpRefStatement * i_s = new ImpRefStatement((Type*) ut_temp, Location::regOf(num));
+//        stmts->push_back(i_s);
+//        Assign * a_ss = new Assign((Type *) ut_temp,(Exp *) Location::regOf(30),(Exp *) new TypedExp((Type*) ut_temp, (Exp*) Location::regOf(num)), NULL);
+//        std::cout << "REPRESENT A BYTE " << a_ss->prints() << std::endl;
+//        stmts->push_back(a_ss);
+//    }
 
     return stmts;
 }
@@ -258,31 +274,23 @@ Exp* byte_present(char * reg, std::map<string, int>* symTable){
 }
 Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
     list<UnionDefine*>::iterator li;
-    bool bitVar = false;
-    for(li = unionDefine->begin(); li!=unionDefine->end(); ++li){
-        UnionDefine* temp = (*li);
-        map<char*, int>::iterator mi;
-        for (mi = temp->bitVar->begin(); mi!=temp->bitVar->end(); ++mi){
-            if (strcmp(reg, (*mi).first) == 0){
-                bitVar = true;
-                break;
-            }
-        }
+    std::string reg_string(reg);
+    bool bitVar = pos>8 || pos <1;
         if (bitVar){
             Exp* exp = NULL;
-            unsigned num = map_sfr(temp->byteVar, symTable);
+            unsigned num = 8;
             Exp * exp1 = Location::regOf(num);
-            string bits = "bits"+string(temp->byteVar);
+            string bits = "bits"+string(reg);
             unsigned num1 = map_sfr(bits.c_str(), symTable, num);
             Exp * exp2 = new Binary(opMemberAccess,exp1, Location::regOf(num1));
             exp = new Binary(opMemberAccess,exp2, Location::regOf(map_sfr(reg, symTable, num, num1)));
-
+            std::cout<<"ACCESS BIT: "<<exp->prints()<<", "<<bits<<endl;
             //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
             //exp = Location::regOf(num);
             //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
             return exp;
         }
-    }
+
     if(!bitVar){
         Exp* exp = NULL;
         unsigned num = map_sfr(reg, symTable);

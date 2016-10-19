@@ -48,7 +48,15 @@ union Arg {
 class UnionDefine{
 public:
         char* byteVar;
-        map<char*, int>* bitVar;
+        map<int, char*>* bitVar;
+        void prints(){
+            cout << "Byte var: " << byteVar <<endl;
+            cout << "Bit vars: "<<endl;
+            map<int, char*>::iterator mi;
+            for (mi = bitVar->begin(); mi != bitVar -> end(); mi++){
+                cout << (*mi).second << ": " << (*mi).first << endl;
+            }
+        }
 };
 class AssemblyArgument{
 public:
@@ -124,11 +132,12 @@ public:
 
 class AssemblyProgram{
 public:
-	std::string name;
-	std::list<AssemblyLabel*> *labelList;
-        std::list<char*> bitReg;
-        std::list<UnionDefine*>* unionDefine= new std::list<UnionDefine*>();
-        std::map<char*, AssemblyArgument> replacement;
+    std::string name;
+    std::list<AssemblyLabel*> *labelList;
+    std::list<char*> bitReg;
+    //std::list<UnionDefine*>* unionDefine= new std::list<UnionDefine*>();
+    std::map<char*, AssemblyArgument*> replacement;
+    std::map<char*, int> bitVar;
 public:
 	AssemblyProgram(){
 	}

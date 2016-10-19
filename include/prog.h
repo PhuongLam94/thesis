@@ -140,7 +140,7 @@ virtual				~Prog();
 
 		// Do the main non-global decompilation steps
 		void		decompile();
-                void            unionCheck();
+                bool            unionCheck();
 		// All that used to be done in UserProc::decompile, but now done globally: propagation, recalc DFA, remove null
 		// and unused statements, compressCfg, process constants, promote signature, simplify a[m[]].
 		void		decompileProcs();

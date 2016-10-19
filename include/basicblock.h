@@ -37,7 +37,7 @@ class Proc;
 class UserProc;
 class UnionDefine;
 struct SWITCH_INFO;				// Declared in include/statement.h
-
+class AssemblyArgument;
 typedef BasicBlock* PBB;
 
 /*	*	*	*	*	*	*	*	*	*	*	*	*	*	*	*\
@@ -529,7 +529,10 @@ public:
 
                 bool            calcReachingDef();
                 void            checkUnion(std::list<UnionDefine*> unionDefine);
-                char* findByteVar(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc);
+                bool            makeUnion(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2);
+                bool            makeUnion(std::list<UnionDefine*>& unionDefine, char* bitVar, char* byteVar, std::map<char*, int> bitVar2, bool reCall=false);
+                char* findByteVar(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc=NULL);
+                int findBitNum(char* bitVar, std::map<char*, int> mapBit);
                 void            getReachIn(AssignSet& reach);
 		// Find indirect jumps and calls
 		bool		decodeIndirectJmp(UserProc* proc);

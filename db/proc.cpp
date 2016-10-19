@@ -1148,7 +1148,8 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 	return child;
 }
 
-void UserProc::unionCheck() {
+bool UserProc::unionCheck() {
+        //std::cout<<"UNION CHECK OF PROC IS CALLED"<<endl;
         if (VERBOSE)
                 LOG << "begin decompile(" << getName() << ")\n";
 
@@ -1168,8 +1169,15 @@ void UserProc::unionCheck() {
                 // Look at each call, to do the DFS
                 for (PBB bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)) {
                     bb->calcReachingDef();
-                    bb->checkUnion(unionDefine);
+                    //bb->checkUnion(unionDefine);
+                    unionDefine.clear();
+
+                   if(!bb->makeUnion(unionDefine, replacement, bitVar))
+                       //cout<<"proc check union is false"<<endl;
+                       return false;
+                   status = PROC_FINAL;
                 }
+                return true;
 
 }
 
@@ -1611,6 +1619,7 @@ void UserProc::remUnusedStmtEtc() {
 	RefCounter refCounts;			// The map
 	// Count the references first
 	countRefs(refCounts);
+    checkAccAssign();
 	// Now remove any that have no used
 	if (!Boomerang::get()->noRemoveNull)
 		remUnusedStmtEtc(refCounts);
@@ -1665,6 +1674,44 @@ void UserProc::remUnusedStmtEtc() {
 
 	Boomerang::get()->alert_decompile_debug_point(this, "after final");
 }
+void UserProc::checkAccAssign(){
+    StatementList::iterator it;
+    StatementList stmts;
+    getStatements(stmts);
+    for (it = stmts.begin(); it!= stmts.end(); it++){
+        Statement* s = (*it);
+        std::cout<<"ISACCASSIGN: "<<s->prints()<<endl;
+        bool isAssignAcc = false;
+        if (s->isAssign()){
+           Assign* assign = (Assign*) s;
+            if (assign->getRight()->isMemOf()&&
+                    assign->getRight()->getSubExp1()->isSubscript() &&
+                    assign->getRight()->getSubExp1()->getSubExp1()->isRegOf()
+                    )
+            {
+                bool isA = false;
+                if (assign->getLeft()->isRegOf()){
+                    isA = ((Const*)assign->getLeft()->getSubExp1())->getInt() == 8;
+                }
+                if (assign->getLeft()->isMemberOf()){
+                    isA = ((Const*)assign->getLeft()->getSubExp1()->getSubExp1())->getInt() == 8;
+                }
+
+                if (isA){
+                 Exp* rhs = (Exp*) assign->getRight()->getSubExp1()->getSubExp1();
+                        char* byteVar = getRegName(rhs);
+                        isAssignAcc = true;
+                        s->setByteAssign(byteVar);
+                        s->setAccAssign(isAssignAcc);
+                        std::cout<<"ISASSIGN: "<<isAssignAcc<<endl;
+                    }
+
+            }
+        }
+        s->setAccAssign(isAssignAcc);
+
+    }
+}
 
 void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 	
@@ -1678,7 +1725,7 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 		StatementList::iterator ll = stmts.begin();
 		while (ll != stmts.end()) {
 			Statement* s = *ll;
-			if (!s->isAssignment()) {
+            if (!s->isAssignment()) {
 				// Never delete a statement other than an assignment (e.g. nothing "uses" a Jcond)
 				ll++;
 				continue;
@@ -1706,13 +1753,13 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 				ll++;
 				continue;
 			}
-			if (refCounts.find(s) == refCounts.end() || refCounts[s] == 0) {	// Care not to insert unnecessarily
+            if (refCounts.find(s) == refCounts.end() || refCounts[s] == 0) {	// Care not to insert unnecessarily
 				// First adjust the counts, due to statements only referenced by statements that are themselves unused.
 				// Need to be careful not to count two refs to the same def as two; refCounts is a count of the number
 				// of statements that use a definition, not the total number of refs
 				StatementSet stmtsRefdByUnused;
 				LocationSet components;
-				s->addUsedLocs(components, false);		// Second parameter false to ignore uses in collectors
+                s->addUsedLocs(components, false);		// Second parameter false to ignore uses in collectors
 				LocationSet::iterator cc;
 				for (cc = components.begin(); cc != components.end(); cc++) {
 					if ((*cc)->isSubscript()) {
@@ -1729,37 +1776,7 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 				}
 				if (DEBUG_UNUSED)
 					LOG << "removing unused statement " << s->getNumber() << " " << s << "\n";
-                bool isAssignAcc = false;
-                if (s->isAssign()){
-                    //std::cout<<"REM: "<<s->prints()<<endl;
-                    Assign* assign = (Assign*) s;
-                    if (assign->getLeft()->isRegOf() && assign->getRight()->isMemOf()
-                            && assign->getRight()->getSubExp1()->isMemberOf() &&
-                            assign->getRight()->getSubExp1()->getSubExp2()->isStrConst() &&
-                            strcmp(((Const*) assign->getRight()->getSubExp1()->getSubExp2())->getChar(), "byte") == 0 &&
-                            assign->getRight()->getSubExp1()->getSubExp1()->isSubscript() &&
-                            assign->getRight()->getSubExp1()->getSubExp1()->getSubExp1()->isRegOf()
-                            )
-                    {
-                        Location* lhs =((Location*) assign->getLeft());
-                        if (lhs->getSubExp1()->getOper() == opIntConst){
-                            Const* constLHS = (Const*) lhs->getSubExp1();
-                            if (constLHS->getInt() == 8){
-                                Exp* rhs = (Exp*) assign->getRight()->getSubExp1()->getSubExp1()->getSubExp1();
-                                char* byteVar = getRegName(rhs);
-                                list<UnionDefine*>::iterator udIt;
-                                for (udIt = unionDefine.begin(); udIt != unionDefine.end(); udIt++){
-                                    UnionDefine* ud = (*udIt);
-                                    if (strcmp(ud->byteVar, byteVar) == 0){
-                                        isAssignAcc = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!isAssignAcc){
+                if (!s->getAccAssign()){
                 removeStatement(s);
 				ll = stmts.erase(ll);	// So we don't try to re-remove it
                 change = true;

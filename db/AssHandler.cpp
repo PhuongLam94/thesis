@@ -64,7 +64,7 @@ const char *registers[rsize] = {
 };
 std::map<char*,int> undefined;
 std::map<char *, char *> defined;
-std::map<char*,AssemblyArgument> replace;
+std::map<char*,AssemblyArgument*> replace;
 list<const char*> loop_labels;
 
 bool check_loop(const char* name){
@@ -76,87 +76,37 @@ bool check_loop(const char* name){
 	return false;
 }
 Arg findReplacement(char * name){
-    map<char*, AssemblyArgument>::iterator it;
+    map<char*, AssemblyArgument*>::iterator it;
     for (it = replace.begin(); it!=replace.end(); it++){
         if(strcmp(it->first, name) == 0){
-            return ((it->second).value);
+            return ((it->second)->value);
         }
     }
     Arg temp;
     temp.c = "NULL";
     return temp;
 }
-void showUnionDefine(AssemblyProgram* ass_program){
-    list<UnionDefine*>::iterator li;
-    for (li = unionDefine1->begin(); li!=unionDefine1->end(); li++){
-        UnionDefine* temp = (*li);
-        cout << "Byte var: " << temp -> byteVar <<endl;
-        cout << "Bit vars: "<<endl;
-        map<char*, int>::iterator mi;
-        for (mi = temp ->bitVar->begin(); mi != temp -> bitVar -> end(); mi++){
-            cout << (*mi).first << ": " << (*mi).second << endl;
-        }
-        ass_program->unionDefine->push_back(temp);
-    }
+//void showUnionDefine(AssemblyProgram* ass_program){
+//    list<UnionDefine*>::iterator li;
+//    for (li = unionDefine1->begin(); li!=unionDefine1->end(); li++){
+//        UnionDefine* temp = (*li);
+//        temp->prints();
+//        ass_program->unionDefine->push_back(temp);
+//    }
+//}
+void include_bitVar(AssemblyProgram* &ass_program){
+    ass_program->bitVar = *bitVar;
 }
-void init_defined(const char* name){
-	std::string path(name);
-	std::size_t found = path.find_last_of("/\\");
-	std::string define_path;
-	if (found != -1 ){
-		define_path.append(path.substr(0,found)).append("/defines"); 
-	}
-	const char *file = define_path.c_str();
-	FILE *myfile = fopen(file, "r");
-	if (!myfile) {
-		std::cout << "DEFINES file does not exist, create one if needed!" << std::endl;
-	}
-	else{
-		std::cout << "DEFINES exists, start Parsing...\n";
-		std::string line;
-		std::ifstream input(file);
-		std::string l;
-		
-	    while( std::getline(input, line)) {
-	       found = line.find_last_of(":");
-	       l = line.substr(0,found);
-	       char *key = new char[l.length() + 1];
-		   strcpy(key, l.c_str());
-		
-	       l = line.substr(found+1);
-	       char *value = new char[l.length() + 1];
-		   strcpy(value, l.c_str());
-		   defined[key] = value;
-	    }
 
-	}
-    fclose(myfile);
-
+void init_defined(){
     list<AssemblyLine*>::iterator di;
         for(di = defines -> begin(); di != defines->end(); di++){
             AssemblyExpression* var1 = (*di) -> expList -> back();
             (*di) -> expList -> pop_back();
             char* var2 = (*((*((*di) -> expList -> back())).argList.front())).value.c;
-            replace[var2] = *(var1 ->argList.front());
-        }
+            replace[var2] = (var1 ->argList.front());
 
-	std::map<char *, char *>::iterator i;
-	for(i = defined.begin(); i != defined.end(); ++i){
-		std::cout << i->first << ":" << i->second << std::endl;
-	}
-    /*defined["Option"] = "R1";
-	defined["someFlag"] = "R2";
-	defined["DRAB"] = "ACC.1";
-	defined["CARB"] = "ACC.3";
-	defined["OPTIONS"] = "R7";
-	defined["SMPDUP"] = "ACC.1";
-	defined["SLVFLGMAP"] = "R6";
-	defined["MASTER"] = "ACC.2";
-	defined["XROVLY"] = "R5";
-	defined["SIMP"] = "ACC.4";
-	defined["SYSFLGMAP"] = "R4";
-	defined["BTS"] = "P0";
-    defined["whatever"] = "R3";//*/
+        }
 }
 char * defined_value(char * name){
 	std::map<char *,char *>::iterator it;
@@ -403,11 +353,7 @@ void handle_binary(AssemblyProgram* &ass_program){
 								case 5: //IMMEDIATE ID
                                 case 6: // ID
                                     if(!if_exist((*ai)->value.c,registers,rsize)){
-                                        char * replacement = (*ai)->value.c;
-                                        Arg n = findReplacement((*ai)->value.c);
-                                        if (strcmp(n.c, "NULL") != 0){
-                                            (*ai)->replacement = n;
-                                        }
+
                                     }
 									break;
 								default:
@@ -511,11 +457,11 @@ AssemblyProgram* AssHandler::process(const char* name) {
 	std::cout << "------START PARSING------\n" << name << std::endl;
 	handle(name);
 	std::cout << "-----HANDLE BINARY EXPRESSION---\n";
-	init_defined(name);
+    init_defined();
 	handle_binary(ass_program);
 
 	std::cout << "-----HANDLE BIT ---\n";
-    //handle_bit(ass_program);
+    handle_bit(ass_program);
 
 	std::cout << "-----APPENDING JUMP AND BRANCH STATEMENTS---\n";	
     append_jumps(ass_program);
@@ -530,10 +476,11 @@ AssemblyProgram* AssHandler::process(const char* name) {
 	address_label(ass_program);
 
     std::cout << "---HANDLE UNION---\n";
-    showUnionDefine(ass_program);
+    //showUnionDefine(ass_program);
+    include_bitVar(ass_program);
 
     ass_program->replacement = replace;
-
+    ass_program->bitVar = *bitVar;
 	list<AssemblyLabel*>::iterator lbi;
 	if (ass_program){
 		for(lbi = ass_program->labelList->begin();lbi != ass_program->labelList->end(); lbi++){
@@ -545,7 +492,7 @@ AssemblyProgram* AssHandler::process(const char* name) {
 		for(br = ass_program->bitReg.begin();br != ass_program->bitReg.end(); ++br){
 			std::cout <<  " REGISTER IS BIT PRESENTATOR " << (*br) << std::endl;
 		}
-	}
+    }
 	return ass_program;	
 }
 

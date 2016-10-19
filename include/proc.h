@@ -55,6 +55,7 @@ class Signature;
 class Cluster;
 class XMLProgParser;
 class UnionDefine;
+class AssemblyArgument;
 /*==============================================================================
  * Procedure class.
  *============================================================================*/
@@ -68,6 +69,8 @@ public:
 		 */
 		Proc(Prog *prog, ADDRESS uNative, Signature *sig);
                 std::list<UnionDefine*> unionDefine;
+                std::map<char*, AssemblyArgument*> replacement;
+                std::map<char*, int> bitVar;
 
 virtual				~Proc();
 
@@ -348,6 +351,7 @@ class UserProc : public Proc {
 		 */
 public:
 		typedef std::multimap<Exp*,Exp*,lessExpStar> SymbolMap;
+                 void checkAccAssign();
 private:
 		SymbolMap	symbolMap;
 
@@ -495,7 +499,7 @@ virtual bool		isNoReturn();
 		/// path from the current entry point to the current procedure in the call graph. Pass an empty set at the top
 		/// level.  indent is the indentation level; pass 0 at the top level
 		ProcSet*	decompile(ProcList* path, int& indent);
-                void            unionCheck();
+                bool            unionCheck();
 		/// Initialise decompile: sort CFG, number statements, dominator tree, etc.
 		void		initialiseDecompile();
 		/// Prepare for preservation analysis only.

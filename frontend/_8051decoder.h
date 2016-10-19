@@ -11,6 +11,7 @@ struct DecodeResult;
 extern std::map<ADDRESS,const char*> namesList;
 extern std::map<ADDRESS,bool> funcsType;
 extern std::list<char*> bitReg;
+extern std::map<char*, AssemblyArgument*> replacement;
 extern std::list<UnionDefine*>* unionDefine;
 class _8051Decoder : public NJMCDecoder
 {

@@ -65,6 +65,7 @@ AssHandler* ass_handler;
 std::map<ADDRESS,const char*> namesList;
 std::map<ADDRESS,bool> funcsType;
 std::list<char*> bitReg;
+std::map<char*, AssemblyArgument*> replacement;
 std::list<UnionDefine*>* unionDefine;
 bool first_line;
 /*==============================================================================
@@ -98,7 +99,9 @@ FrontEnd* FrontEnd::instantiate(BinaryFile *pBF, Prog* prog, BinaryFileFactory* 
 					namesList[(*lbi)->address] = (*lbi)->name;
 				}
                 bitReg = AssProgram->bitReg;
-                unionDefine = AssProgram->unionDefine;
+                replacement = AssProgram->replacement;
+
+                unionDefine = new list<UnionDefine*>();
 				return new _8051FrontEnd(pBF,prog, pbff);
 			}
 		case MACHINE_PPC:
@@ -692,7 +695,9 @@ bool FrontEnd::processProc(ADDRESS uAddr, UserProc* pProc, std::ofstream &os, bo
 				pBB = pCfg->newBB(BB_rtls, INVALID, 0);
 				sequentialDecode = false; BB_rtls = NULL; continue;
 			}
-            pProc->unionDefine = inst.unionDefine;
+            //pProc->unionDefine = new list<UnionDefine*>();
+            pProc->bitVar = AssProgram->bitVar;
+            pProc->replacement = AssProgram->replacement;
 			// alert the watchers that we have decoded an instruction
 			Boomerang::get()->alert_decode(uAddr, inst.numBytes);
 			nTotalBytes += inst.numBytes;			
