@@ -45,7 +45,7 @@
 //#include "statement.h"	// For StmtSet etc
 #include "exphelp.h"
 #include "memo.h"
-
+#include "worklist.h"
 class UseSet;
 class DefSet;
 class RTL;				// For class FlagDef
@@ -95,6 +95,7 @@ virtual				~Exp() {}
 		void		setLexEnd(unsigned int n) { lexEnd = n; }
 		unsigned	getLexBegin() { return lexBegin; }
 		unsigned	getLexEnd() { return lexEnd; }
+                virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map);
 
 		// Print the expression to the given stream
 virtual void		print(std::ostream& os, bool html = false) = 0;
@@ -387,6 +388,7 @@ class Const : public Exp {
 		int			conscript;	// like a subscript for constants
 		Type*		type;		// Constants need types during type analysis
 public:
+                virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
                 char* getChar(){return u.p;}
 		// Special constructors overloaded for the various constants
 					Const(int i);
@@ -502,6 +504,7 @@ public:
 					Unary(OPER op, Exp* e);
 		// Copy constructor
 					Unary(Unary& o);
+                 virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
 
 		// Clone
 virtual Exp*		clone();
@@ -619,6 +622,7 @@ virtual Exp*		genConstraints(Exp* restrictTo);
 		// Visitation
 virtual bool		accept(ExpVisitor* v);
 virtual Exp*		accept(ExpModifier* v);
+virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
 
 virtual	Type*		ascendType();
 virtual void		descendType(Type* parentType, bool& ch, Statement* s);

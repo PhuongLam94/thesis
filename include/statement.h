@@ -42,7 +42,7 @@
  CallStatement_/  /   /    \ \________
        PhiAssign_/ Assign  BoolAssign \_ImplicitAssign
 */
-
+//#include <map>
 #include <vector>
 #include <set>
 #include <list>
@@ -79,7 +79,7 @@ class Assign;
 class RTL;
 class XMLProgParser;
 class ReturnStatement;
-
+class ConstantVariable;
 typedef std::set<UserProc*> CycleSet;
 
 /*==============================================================================
@@ -145,6 +145,9 @@ public:
 		void		setDomNumber(int dn) {dominanceNum = dn;}
                 AssignSet           reachIn;
                 AssignSet           reachOut;
+                std::map<Exp*, ConstantVariable*> constantIn; //to store constant value of a variable coming to the statement
+                std::map<Exp*, ConstantVariable*> constantOut; //to store constant value of a variable coming out of the statement
+
 protected:
 #endif
 		STMT_KIND	kind;			// Statement kind (e.g. STMT_BRANCH)
