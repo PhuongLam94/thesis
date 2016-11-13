@@ -28,7 +28,7 @@ FLEXPP=flex++
 DB_LIB=$(top_srcdir)/lib/libdb.so
 TEST_OBJS = ExpTest.o ProcTest.o ProgTest.o RtlTest.o ParserTest.o TypeTest.o CfgTest.o
 LIB_OBJS = exp.o prog.o proc.o rtl.o cfg.o basicblock.o register.o sslparser.o sslscanner.o insnameelem.o sslinst.o \
-	table.o type.o dataflow.o
+	table.o type.o dataflow.o worklist.o
 
 BOOMDIR="$(PWD)/.."
 LIBDIR=$(BOOMDIR)/lib
@@ -94,6 +94,7 @@ ExpTest.o: ExpTest.h ../include/exp.h ../include/operator.h
 ProgTest.o: ProgTest.h ../include/prog.h
 
 exp.o: ../include/exp.h ../include/operator.h
+worklist.o: ../include/worklist.h ../include/exp.h
 prog.o: ../include/prog.h
 cfg.o: ../include/cfg.h
 basicblock.o: ../include/cfg.h
@@ -109,6 +110,7 @@ testExpStubs.o: utilStubs.cpp typeStubs.cpp
 prog.o:             EXTRAS = $(BOOMSET)
 StatementTest.o:    EXTRAS = $(BOOMSET) -I$(top_srcdir)/frontend
 exp.o:              EXTRAS = -I.
+worklist.o:              EXTRAS = -I.
 testStmtStubs.o:    EXTRAS = -I$(top_srcdir)/frontend
 RtlTest.o:          EXTRAS = $(BOOMSET) -I$(top_srcdir)/frontend
 

@@ -69,7 +69,7 @@
 #include "config.h"
 #include "managed.h"
 #include "log.h"
-
+#include "AssemblyInfo.h"
 #ifdef _WIN32
 #undef NO_ADDRESS
 #include <windows.h>
@@ -1299,7 +1299,7 @@ void Prog::decompile() {
 		if (VERBOSE)
 			LOG << "decompiling entry point " << (*ee)->getName() << "\n";
 		int indent = 0;
-		(*ee)->decompile(new ProcList, indent);
+        (*ee)->decompile(new ProcList, indent, map);
 	}
 
 	// Just in case there are any Procs not in the call graph. 
@@ -1313,7 +1313,7 @@ void Prog::decompile() {
 				if (proc->isLib()) continue;
 				if (proc->isDecompiled()) continue;
 				int indent = 0;
-				proc->decompile(new ProcList, indent);
+                proc->decompile(new ProcList, indent, map);
 				foundone = true;
 			}
 		}
@@ -1355,6 +1355,7 @@ void Prog::decompile() {
 	removeUnusedGlobals();
 }
 bool Prog::unionCheck(){
+    unionDefine.clear();
     assert(m_procs.size());
     if (VERBOSE)
             LOG << (int)m_procs.size() << " procedures\n";
@@ -1366,7 +1367,7 @@ bool Prog::unionCheck(){
             if (VERBOSE)
                     LOG << "decompiling entry point " << (*ee)->getName() << "\n";
             int indent = 0;
-            if(!(*ee)->unionCheck())
+            if(!(*ee)->unionCheck(unionDefine))
                 return false;
 
     }
@@ -1382,13 +1383,94 @@ bool Prog::unionCheck(){
                             if (proc->isLib()) continue;
                             if (proc->isDecompiled()) continue;
                             int indent = 0;
-                            if(!proc->unionCheck())
+                            if(!proc->unionCheck(unionDefine))
                                 return false;
                             foundone = true;
                     }
             }
     }
+    std::map<char*, AssemblyArgument*> replacement = ((UserProc*) (*entryProcs.begin()))->replacement;
+    std::map<char*, AssemblyArgument*>::iterator mit;
+    list<UnionDefine*>::iterator it2;
+    std::list<Statement*>* stmts = new list<Statement*>();
+    std::cout<<"NUM OF UNION FOUND: "<<unionDefine.size()<<endl;
+    for (it2 = unionDefine.begin(); it2 != unionDefine.end(); it2++){
+       // std::cout<<"LIST OF UNION DEFINE: "<<std::endl;
+
+        //(*it2)->prints();
+        UnionDefine* ud = (*it2);
+        bool existByte = false;
+        for (mit = replacement.begin(); mit!= replacement.end(); mit++){
+
+            if (ud->byteVarValue == ((AssemblyArgument*) (*mit).second)->value.i){
+                ud->byteVar = (*mit).first;
+                existByte = true;
+            }
+        }
+        if (!existByte){
+            ud->byteVar = strdup("LOCATION_"+ud->byteVarValue);
+        }
+        ud->prints();
+        UnionType * ut_temp = new UnionType();
+        ut_temp->addType(new SizeType(8), "byte");
+        CompoundType* ct_temp = new CompoundType();
+        //ud->bitVar->
+        std::map<int,char*>::iterator mi;
+        for (int i=1; i<9; i++){
+            std::string temp;
+            if (ud->bitVar->find(i) != ud->bitVar->end()){
+                temp = std::string((*ud->bitVar)[i])+":1";
+            } else{
+                temp=string("bit")+std::to_string(i)+string(":1");
+            }
+            //std::cout<<"TEMP: "<<temp<<endl;
+            ct_temp->addType(new SizeType(8), temp.c_str());
+        }
+//        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
+//        {
+//            std::string temp(std::string((*mi).second)+":1");
+//            ct_temp->addType(new SizeType(8), temp.c_str());
+//        }
+        ut_temp->addType(ct_temp, "bits");
+        globals.insert(new Global(ut_temp, NULL, ud->byteVar));
+
+    }
     return true;
+}
+void Prog::constantPropagation(){
+    std::cout<<"Into constant propagation of program"<<std::endl;
+    map.clear();
+    assert(m_procs.size());
+    if (VERBOSE)
+            LOG << (int)m_procs.size() << " procedures\n";
+
+    // Start decompiling each entry point
+    std::list<UserProc*>::iterator ee;
+    for (ee = entryProcs.begin(); ee != entryProcs.end(); ++ee) {
+    //std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
+            if (VERBOSE)
+                    LOG << "decompiling entry point " << (*ee)->getName() << "\n";
+            int indent = 0;
+            (*ee)->constantPropagation(map);
+
+    }
+
+    // Just in case there are any Procs not in the call graph.
+    std::list<Proc*>::iterator pp;
+    if (Boomerang::get()->decodeMain && !Boomerang::get()->noDecodeChildren) {
+            bool foundone = true;
+            while (foundone) {
+                    foundone = false;
+                    for (pp = m_procs.begin(); pp != m_procs.end(); pp++) {
+                            UserProc* proc = (UserProc*)(*pp);
+                            if (proc->isLib()) continue;
+                            if (proc->isDecompiled()) continue;
+                            int indent = 0;
+                            proc->constantPropagation(map);
+                            foundone = true;
+                    }
+            }
+    }
 }
 
 void Prog::removeUnusedGlobals() {
@@ -1467,7 +1549,7 @@ bool Prog::removeUnusedReturns() {
 	std::set<UserProc*>::iterator it;
 	while (removeRetSet.size()) {
 		it = removeRetSet.begin();		// Pick the first element of the set
-		change |= (*it)->removeRedundantReturns(removeRetSet);
+        change |= (*it)->removeRedundantReturns(removeRetSet, map);
 		// Note: removing the currently processed item here should prevent unnecessary reprocessing of self recursive
 		// procedures
 		removeRetSet.erase(it);			// Remove the current element (may no longer be the first)

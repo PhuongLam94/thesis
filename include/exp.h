@@ -45,7 +45,6 @@
 //#include "statement.h"	// For StmtSet etc
 #include "exphelp.h"
 #include "memo.h"
-#include "worklist.h"
 class UseSet;
 class DefSet;
 class RTL;				// For class FlagDef
@@ -59,6 +58,11 @@ class ExpModifier;
 class XMLProgParser;
 class Proc;
 class UserProc;
+class ConstantVariable;
+class EvalExpressionVisitor;
+class MapExpConstant;
+class AssemblyArgument;
+
 typedef BasicBlock* PBB;
 
 #define DEBUG_BUFSIZE	5000		// Size of the debug print buffer
@@ -95,7 +99,7 @@ virtual				~Exp() {}
 		void		setLexEnd(unsigned int n) { lexEnd = n; }
 		unsigned	getLexBegin() { return lexBegin; }
 		unsigned	getLexEnd() { return lexEnd; }
-                virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map);
+                virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){return NULL;}
 
 		// Print the expression to the given stream
 virtual void		print(std::ostream& os, bool html = false) = 0;
@@ -388,7 +392,7 @@ class Const : public Exp {
 		int			conscript;	// like a subscript for constants
 		Type*		type;		// Constants need types during type analysis
 public:
-                virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
+                virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
                 char* getChar(){return u.p;}
 		// Special constructors overloaded for the various constants
 					Const(int i);
@@ -501,10 +505,10 @@ protected:
 					Unary(OPER op);
 public:
 		// Constructor, with ID and subexpression
-					Unary(OPER op, Exp* e);
-		// Copy constructor
+                                        Unary(OPER op, Exp* e);
+                                        // Copy constructor
 					Unary(Unary& o);
-                 virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
+                 virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 
 		// Clone
 virtual Exp*		clone();
@@ -622,7 +626,7 @@ virtual Exp*		genConstraints(Exp* restrictTo);
 		// Visitation
 virtual bool		accept(ExpVisitor* v);
 virtual Exp*		accept(ExpModifier* v);
-virtual ConstantVariable* accept(EvalExpressionVisitor* v, map<Exp*, ConstantVariable*>& map){return v->visit(this, map);}
+virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 
 virtual	Type*		ascendType();
 virtual void		descendType(Type* parentType, bool& ch, Statement* s);

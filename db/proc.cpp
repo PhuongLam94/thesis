@@ -55,6 +55,7 @@
 #include <cstring>
 #include "procABI.cpp"
 #include "AssemblyInfo.h"
+#include "worklist.h"
 #ifdef _WIN32
 #undef NO_ADDRESS
 #include <windows.h>
@@ -127,6 +128,121 @@ void Proc::setName(const char *nam) {
  *============================================================================*/
 ADDRESS Proc::getNativeAddress() {
 	return address;
+}
+/*==============================================================================
+ * FUNCTION:		UserProc::constantPropagation
+ * OVERVIEW:		Do the constant propagation to find reg value
+ * PARAMETERS:		tbc
+ * RETURNS:			tbc
+ *============================================================================*/
+void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
+    std::cout<<"Into constant propagation of procedure"<<endl;
+
+    //std::cout<<"OPTIONS: "<<(replacement.find("OPTIONS") == replacement.end())<<endl;
+    PBB bb;
+    BB_IT it;
+
+    list<Statement*> worklist;
+    EvalExpressionVisitor* v = new EvalExpressionVisitor();
+    //init, add the first assign statement of bb to worklist
+    for (bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)){
+        //BasicBlock* temp = new BasicBlock();
+        list<RTL*>* listRTL = bb->getRTLs();
+        list<RTL*>::iterator rit;
+        for (rit = listRTL->begin(); rit!=listRTL->end(); rit++){
+            std::list<Statement*>& stmts = (*rit)->getList();
+            std::list<Statement*>::iterator sit;
+            for (sit = stmts.begin(); sit!=stmts.end(); sit++){
+               Statement* statement = (*sit);
+               if (statement->isAssign()||statement->isPhi()){
+                   worklist.push_back(statement);
+                   break;
+               }
+              }
+            if (worklist.size()>0)
+                break;
+        }
+        if (worklist.size()>0)
+            break;
+    }
+    //iterate unitl worklist is empty
+    while (worklist.size()>0){
+        std::cout<<"Worklist size: "<<worklist.size()<<endl;
+        Assignment* assign = (Assignment*) worklist.front();
+        Exp* lhs = assign->getLeft();
+        worklist.pop_front();
+        ConstantVariable* val;
+        std::cout<<"Assign: "<<assign->prints()<<std::endl;
+        if (assign->isAssign()){
+            Assign* assign2 = (Assign*) assign;
+            Exp* rhs = assign2->getRight();
+            Exp* eval;
+            //std::cout<<lhs->prints()<<", "<<Location::regOf(8)->prints()<<", "<<lhs->isRegOf()<<", "<<((*lhs) == (*Location::regOf(8)))<<", "<<rhs->isMemOf()<<endl;
+           if (lhs->isRegOf() && (*lhs) == (*Location::regOf(8)) && rhs->isMemOf()){
+                eval = rhs->getSubExp1();
+           } else {
+               eval = rhs;
+           }
+           //std::cout<<"Eval: "<<eval->prints()<<", "<<replacement.size()<<std::endl;
+           val = eval->accept(v, map, replacement, this);
+        }
+        if (assign->isPhi()){
+            PhiAssign* phiAssign = (PhiAssign*) assign;
+            val = new ConstantVariable();
+            val->type = 1;
+            for (int i=0; i<phiAssign->getNumDefs(); i++){
+                Assignment* temp = (Assignment*) phiAssign->getStmtAt(i);
+                if (map.find(temp->getLeft())!=map.end()){
+                    ConstantVariable* tempVal = map[temp->getLeft()];
+                    if (tempVal->type == 3){
+                        val->type = 3;
+                        break;
+                    }
+                    if (tempVal->type == 1){
+                        continue;
+                    }
+                    if (val->type == 1){
+                        val = tempVal;
+                    } else {
+                        if (val->variable != tempVal->variable){
+                            val->type = 3;
+                            break;
+                        }
+                    }
+                }
+            }
+            //val = ((PhiAssign*) assign)->getRight()->accept(v, map);
+        }
+        std::cout<<"Value: "<<val->type<<", "<<val->variable->prints()<<endl;
+        std::cout<<"Map: "<<map.size()<<", "<<(map.find(lhs) == map.end())<<endl;
+        if (map.find(lhs) == map.end() || (*map.find(lhs)).second != val){
+            map[lhs] = val;
+            for (bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)){
+                //BasicBlock* temp = new BasicBlock();
+                list<RTL*>* listRTL = bb->getRTLs();
+                list<RTL*>::iterator rit;
+                for (rit = listRTL->begin(); rit!=listRTL->end(); rit++){
+                    std::list<Statement*>& stmts = (*rit)->getList();
+                    std::list<Statement*>::iterator sit;
+                    for (sit = stmts.begin(); sit!=stmts.end(); sit++){
+                       Statement* statement = (*sit);
+                       if (statement->isAssign()||statement->isPhi()){
+                           LocationSet usedLoc;
+                           if (statement->isAssign()){
+                               ((Assign*) statement)->getRight()->addUsedLocs(usedLoc);
+                           } else {
+                               ((PhiAssign*) statement)->getLeft()->addUsedLocs(usedLoc);
+                           }
+                           if (usedLoc.exists(lhs)){
+                               std::cout<<"Statement: "<<statement->prints()<<endl;
+                               worklist.push_back(statement);
+                           }
+                       }
+                      }
+                }
+            }
+        }
+    }
 }
 
 void Proc::setNativeAddress(ADDRESS a) {
@@ -961,7 +1077,7 @@ void UserProc::insertStatementAfter(Statement* s, Statement* a) {
 
 // Decompile this UserProc
 
-ProcSet* UserProc::decompile(ProcList* path, int& indent) {
+ProcSet* UserProc::decompile(ProcList* path, int& indent, std::map<Exp*, ConstantVariable*>&map) {
 	Boomerang::get()->alert_considering(path->empty() ? NULL : path->back(), this);
 	std::cout << std::setw(++indent) << " " << (status >= PROC_VISITED ? "re" : "") << "considering " << getName() <<
 		"\n";
@@ -1072,7 +1188,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 					if (VERBOSE)
 						LOG << "visiting on the way down child " << c->getName() << " from " << getName() << "\n";
 					std::cout<<"Call3.5  "<<c->getSignature()->prints()<<"\n";
-					ProcSet* tmp = c->decompile(path, indent);
+                    ProcSet* tmp = c->decompile(path, indent, map);
 					std::cout<<"Call3.51 "<<c->getSignature()->prints()<<"\n";
 					child->insert(tmp->begin(), tmp->end());
 					// Child has at least done middleDecompile(), possibly more
@@ -1096,7 +1212,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 		
 		earlyDecompile();
 		std::cerr<<"AFTER initialise"<<std::endl;
-		child = middleDecompile(path, indent);
+        child = middleDecompile(path, indent, map);
 		// If there is a switch statement, middleDecompile could contribute some cycles. If so, we need to test for
 		// the recursion logic again
 		if (child->size() != 0)
@@ -1104,7 +1220,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 			path->push_back(this);
 	}
 	if (child->size() == 0) {
-		remUnusedStmtEtc();	// Do the whole works
+        remUnusedStmtEtc(map);	// Do the whole works
 		setStatus(PROC_FINAL);
 		Boomerang::get()->alert_end_decompile(this);
 	} else {
@@ -1123,7 +1239,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 			// Yes, process these procs as a group
 			std::cout<<"real decompile 3"<<getSignature()->prints()<<"\n";
 			std::cout<<getTheReturnStatement()->getNumReturns()<<"\n";
-			recursionGroupAnalysis(path, indent);// Includes remUnusedStmtEtc on all procs in cycleGrp
+            recursionGroupAnalysis(path, indent, map);// Includes remUnusedStmtEtc on all procs in cycleGrp
 			std::cout<<"real decompile 4"<<getSignature()->prints()<<"\n";
 			std::cout<<getTheReturnStatement()->getNumReturns()<<"\n";
 			setStatus(PROC_FINAL);
@@ -1148,7 +1264,7 @@ ProcSet* UserProc::decompile(ProcList* path, int& indent) {
 	return child;
 }
 
-bool UserProc::unionCheck() {
+bool UserProc::unionCheck(std::list<UnionDefine*>& unionDefine) {
         //std::cout<<"UNION CHECK OF PROC IS CALLED"<<endl;
         if (VERBOSE)
                 LOG << "begin decompile(" << getName() << ")\n";
@@ -1168,9 +1284,9 @@ bool UserProc::unionCheck() {
 
                 // Look at each call, to do the DFS
                 for (PBB bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)) {
-                    bb->calcReachingDef();
+                    //bb->calcReachingDef();
                     //bb->checkUnion(unionDefine);
-                    unionDefine.clear();
+                    //unionDefine.clear();
 
                    if(!bb->makeUnion(unionDefine, replacement, bitVar))
                        //cout<<"proc check union is false"<<endl;
@@ -1282,7 +1398,7 @@ void UserProc::earlyDecompile() {
 	Boomerang::get()->alert_decompile_debug_point(this, "after early");
 }
 
-ProcSet* UserProc::middleDecompile(ProcList* path, int indent) {
+ProcSet* UserProc::middleDecompile(ProcList* path, int indent, std::map<Exp*, ConstantVariable*>&map) {
 
 	Boomerang::get()->alert_decompile_debug_point(this, "before middle");
 	std::cout<<"middle decompile  1"<<getTheReturnStatement()->getNumReturns()<<"\n";
@@ -1532,7 +1648,7 @@ ProcSet* UserProc::middleDecompile(ProcList* path, int indent) {
 		setStatus(PROC_VISITED);				// Back to only visited progress
 		path->erase(--path->end());				// Remove self from path
 		--indent;								// Because this is not recursion
-		ProcSet* ret = decompile(path, indent);	// Restart decompiling this proc
+        ProcSet* ret = decompile(path, indent, map);	// Restart decompiling this proc
 		++indent;								// Restore indent
 		path->push_back(this);					// Restore self to path
 		// It is important to keep the result of this call for the recursion analysis
@@ -1571,7 +1687,7 @@ ProcSet* UserProc::middleDecompile(ProcList* path, int indent) {
  *													*
  *	*	*	*	*	*	*	*	*	*	*	*	*	*/
 
-void UserProc::remUnusedStmtEtc() {
+void UserProc::remUnusedStmtEtc(std::map<Exp*, ConstantVariable*>&map) {
 
 	// NO! Removing of unused statements is an important part of the global removing unused returns analysis, which
 	// happens after UserProc::decompile is complete
@@ -1671,7 +1787,10 @@ void UserProc::remUnusedStmtEtc() {
 		printToLog();
 		LOG << "=== after remove unused statements etc for " << getName() << "\n";
 	}
-
+    //std::cout<<"Before constant propagation: "<<endl;
+    //std::cout<<prints()<<endl;
+    constantPropagation(map);
+    //unionCheck(unionDefine);
 	Boomerang::get()->alert_decompile_debug_point(this, "after final");
 }
 void UserProc::checkAccAssign(){
@@ -1795,7 +1914,7 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 	Boomerang::get()->alert_decompile_debug_point(this, "after remUnusedStmtEtc");
 }
 
-void UserProc::recursionGroupAnalysis(ProcList* path, int indent) {
+void UserProc::recursionGroupAnalysis(ProcList* path, int indent, std::map<Exp*, ConstantVariable*>&map) {
 	/* Overall algorithm:
 		for each proc in the group
 			initialise
@@ -1835,7 +1954,7 @@ void UserProc::recursionGroupAnalysis(ProcList* path, int indent) {
 	// Now all the procs in the group should be ready for preservation analysis
 	// The standard preservation analysis should automatically perform conditional preservation
 	for (curp = cycleGrp->begin(); curp != cycleGrp->end(); ++curp) {
-		(*curp)->middleDecompile(path, indent);
+        (*curp)->middleDecompile(path, indent, map);
 		(*curp)->setStatus(PROC_PRESERVEDS);
 	}
 
@@ -1862,7 +1981,7 @@ void UserProc::recursionGroupAnalysis(ProcList* path, int indent) {
 	// while no change
 for (int i=0; i < 2; i++) {
 	for (p = cycleGrp->begin(); p != cycleGrp->end(); ++p) {
-		(*p)->remUnusedStmtEtc();				// Also does final parameters and arguments at present
+        (*p)->remUnusedStmtEtc(map);				// Also does final parameters and arguments at present
 	}
 }
 std::cout<<"recursionGroupAnalysis 3"<<getSignature()->prints()<<"\n";
@@ -5009,7 +5128,7 @@ bool UserProc::removeRedundantParameters() {
 // The removeRetSet is the set of procedures to process with this logic; caller in Prog calls all elements in this set
 // (only add procs to this set, never remove)
 // Return true if any change
-bool UserProc::removeRedundantReturns(std::set<UserProc*>& removeRetSet) {
+bool UserProc::removeRedundantReturns(std::set<UserProc*>& removeRetSet, std::map<Exp*, ConstantVariable*>&map) {
     Boomerang::get()->alert_decompiling(this);
 	Boomerang::get()->alert_decompile_debug_point(this, "before removing unused returns");
 	// First remove the unused parameters
@@ -5045,7 +5164,7 @@ bool UserProc::removeRedundantReturns(std::set<UserProc*>& removeRetSet) {
 		}
 		if (removedRets)
 			// Still may have effects on calls or now unused statements
-			updateForUseChange(removeRetSet);
+            updateForUseChange(removeRetSet, map);
 		return removedRets;
 	}
 
@@ -5105,14 +5224,14 @@ bool UserProc::removeRedundantReturns(std::set<UserProc*>& removeRetSet) {
 		}
 
 		// Now update myself
-		updateForUseChange(removeRetSet);
+        updateForUseChange(removeRetSet, map);
 
 		// Update any other procs that need updating
 		updateSet.erase(this);		// Already done this proc
 		while (updateSet.size()) {
 			UserProc* proc = *updateSet.begin();
 			updateSet.erase(proc);
-			proc->updateForUseChange(removeRetSet);
+            proc->updateForUseChange(removeRetSet, map);
 		}
 	}
 
@@ -5129,7 +5248,7 @@ bool UserProc::removeRedundantReturns(std::set<UserProc*>& removeRetSet) {
 // dataflow and removal of unused statements, recalculate the parameters and call livenesses, and if either or both of
 // these are changed, recurse to parents or those calls' children respectively. (When call livenesses change like this,
 // it means that the recently removed return was the only use of that liveness, i.e. there was a return chain.)
-void UserProc::updateForUseChange(std::set<UserProc*>& removeRetSet) {
+void UserProc::updateForUseChange(std::set<UserProc*>& removeRetSet, std::map<Exp*, ConstantVariable*>&map) {
 	// We need to remember the parameters, and all the livenesses for all the calls, to see if these are changed
 	// by removing returns
 	if (DEBUG_UNUSED) {
@@ -5156,7 +5275,7 @@ void UserProc::updateForUseChange(std::set<UserProc*>& removeRetSet) {
 	removeCallLiveness();			// Want to recompute the call livenesses
 	doRenameBlockVars(-3, true);
 
-	remUnusedStmtEtc();				// Also redoes parameters
+    remUnusedStmtEtc(map);				// Also redoes parameters
 
 	// Have the parameters changed? If so, then all callers will need to update their arguments, and do similar
 	// analysis to the removal of returns

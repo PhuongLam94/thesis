@@ -56,6 +56,7 @@ class Cluster;
 class XMLProgParser;
 class UnionDefine;
 class AssemblyArgument;
+class ConstantVariable;
 /*==============================================================================
  * Procedure class.
  *============================================================================*/
@@ -68,7 +69,7 @@ public:
 		 * Constructor with name, native address and optional bLib.
 		 */
 		Proc(Prog *prog, ADDRESS uNative, Signature *sig);
-                std::list<UnionDefine*> unionDefine;
+                //std::list<UnionDefine*> unionDefine;
                 std::map<char*, AssemblyArgument*> replacement;
                 std::map<char*, int> bitVar;
 
@@ -498,8 +499,8 @@ virtual bool		isNoReturn();
 		/// Begin the decompile process at this procedure. path is a list of pointers to procedures, representing the
 		/// path from the current entry point to the current procedure in the call graph. Pass an empty set at the top
 		/// level.  indent is the indentation level; pass 0 at the top level
-		ProcSet*	decompile(ProcList* path, int& indent);
-                bool            unionCheck();
+                ProcSet*	decompile(ProcList* path, int& indent, std::map<Exp*, ConstantVariable*>&map);
+                bool            unionCheck(std::list<UnionDefine*>& unionDefine);
 		/// Initialise decompile: sort CFG, number statements, dominator tree, etc.
 		void		initialiseDecompile();
 		/// Prepare for preservation analysis only.
@@ -508,10 +509,10 @@ virtual bool		isNoReturn();
 		void		earlyDecompile();
 		/// Middle decompile: All the decompilation from preservation up to but not including removing unused
 		/// statements. Returns the cycle set from the recursive call to decompile()
-		ProcSet*	middleDecompile(ProcList* path, int indent);
+                ProcSet*	middleDecompile(ProcList* path, int indent, std::map<Exp*, ConstantVariable*>&map);
 		/// Analyse the whole group of procedures for conditional preserveds, and update till no change.
 		/// Also finalise the whole group.
-		void		recursionGroupAnalysis(ProcList* path, int indent);
+                void		recursionGroupAnalysis(ProcList* path, int indent, std::map<Exp*, ConstantVariable*>&map);
 		/// Global type analysis (for this procedure).
 		void		typeAnalysis();
 		/// Inserting casts as needed (for this procedure)
@@ -577,7 +578,7 @@ virtual bool		isNoReturn();
 		void		reverseStrengthReduction();
 		/// Trim parameters. If depth not given or == -1, perform at all depths
 		void		trimParameters(int depth = -1);
-		void		processFloatConstants();
+                void		processFloatConstants();
 		//void		mapExpressionsToParameters();   ///< must be in SSA form
 		void		mapExpressionsToLocals(bool lastPass = false);
 		void		addParameterSymbols();
@@ -599,13 +600,15 @@ virtual bool		isNoReturn();
 	
 private:
 		void		searchRegularLocals(OPER minusOrPlus, bool lastPass, int sp, StatementList& stmts);
+                std::map<Exp*,ConstantVariable*> constMap;
 public:
+                void            constantPropagation(std::map<Exp*, ConstantVariable*>& map); //do the constant propagation
 		bool		removeNullStatements();
 		bool		removeDeadStatements();
 typedef std::map<Statement*, int> RefCounter;
 		void		countRefs(RefCounter& refCounts);
 		/// Remove unused statements.
-		void		remUnusedStmtEtc();
+                void		remUnusedStmtEtc(std::map<Exp*, ConstantVariable*>&map);
 		void		remUnusedStmtEtc(RefCounter& refCounts /* , int depth*/);
 		void		removeUnusedLocals();
 		void		mapTempsToLocals();
@@ -646,16 +649,16 @@ typedef std::map<Statement*, int> RefCounter;
 		bool		doesParamChainToCall(Exp* param, UserProc* p, ProcSet* visited);
 		bool		isRetNonFakeUsed(CallStatement* c, Exp* loc, UserProc* p, ProcSet* visited);
 		// Remove redundant parameters. Return true if remove any
-		bool		removeRedundantParameters();
+                bool		removeRedundantParameters();
 		/// Remove any returns that are not used by any callers
 		/// return true if any returns are removed		
-		bool		removeRedundantReturns(std::set<UserProc*>& removeRetSet);
+                bool		removeRedundantReturns(std::set<UserProc*>& removeRetSet,std::map<Exp*, ConstantVariable*>&map);
 		/// 		Reurn true if location e is used gainfully in this procedure. visited is a set of UserProcs already
 		///			visited.
 		bool		checkForGainfulUse(Exp* e, ProcSet& visited);
 		/// Update parameters and call livenesses to take into account the changes causes by removing a return from this
 		/// procedure, or a callee's parameter (which affects this procedure's arguments, which are also uses).
-		void		updateForUseChange(std::set<UserProc*>& removeRetSet);
+                void		updateForUseChange(std::set<UserProc*>& removeRetSet, std::map<Exp*, ConstantVariable*>&map);
 		//void		 countUsedReturns(ReturnCounter& rc);
 		//void		 doCountReturns(Statement* def, ReturnCounter& rc, Exp* loc);
 

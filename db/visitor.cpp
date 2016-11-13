@@ -21,7 +21,104 @@
 #include "signature.h"
 #include "prog.h"
 #include <sstream>
+#include "worklist.h"
+#include "AssemblyInfo.h"
+#include "string.h"
+using namespace std;
+//EvalExpressionVisitor class
+ConstantVariable* EvalExpressionVisitor::visit(Const *c, map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::cout<<"Visit constant expression "<<c->prints()<<std::endl;
+    ConstantVariable* retValue = new ConstantVariable();
+    if (!c->isIntConst()){
+        retValue->type = 3;
+    } else {
+        retValue->type = 2;
+        retValue->variable = c;
+    }
+    return retValue;
+}
+ConstantVariable* EvalExpressionVisitor::visit(Binary *c, map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::cout<<"Visit binary expression "<<c->prints()<<std::endl;
+    ConstantVariable* var1 = c->getSubExp1()->accept(this, m, replacement, proc);
+    ConstantVariable* var2 = c->getSubExp2()->accept(this, m, replacement, proc);
+    ConstantVariable* result = new ConstantVariable();
+    if (!c->getSubExp1()->isIntConst() || !c->getSubExp2()->isIntConst()){
+        result->type = 3;
+    } else{
+    if (var1->type == 3 || var2->type==3){
+        result->type = 3;
+    } else
+    if (var1->type == 1){
+        result = var2;
+    } else
+    if (var2->type == 1){
+        result = var2;
+    } else{
+        result->type = 2;
+    switch (c->getOper()){
+        case opPlus:
+            result->variable = new Const(((Const*)c->getSubExp1())->getInt()+((Const*)c->getSubExp2())->getInt());
+        break;
+    case opMinus:
+        result->variable = new Const(((Const*)c->getSubExp1())->getInt()-((Const*)c->getSubExp2())->getInt());
+    break;
+    case opMult:
+        result->variable = new Const(((Const*)c->getSubExp1())->getInt()*((Const*)c->getSubExp2())->getInt());
+    break;
+    case opDiv:
+    default:
+        result->type = 3;
+        break;
+    }
+    }
+    }
+    return result;
+}
+ConstantVariable* EvalExpressionVisitor::visit(Unary *c, map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::cout<<"Visit unary expression "<<c->prints()<<std::endl;
+    ConstantVariable* result = new ConstantVariable();
+    switch (c->getOper()){
+    case opPlus:
+        result = c->getSubExp1()->accept(this, m, replacement, proc);
+        break;
+    case opMinus:
+        result = c->getSubExp1()->accept(this, m, replacement, proc);
+        result->variable = new Const(-((Const*) result->variable)->getInt());
+        break;
+    case opSubscript:
+        //std::cout<<"test1"<<std::endl;
+        if (c->getSubExp1()->getOper() == opRegOf){
+            //std::cout<<(m.find(c) == m.end())<<std::endl;
+            result->type = 1;
+            if (m.find(c)!=m.end()){
+                result = (*m.find(c)).second;
+            } else {
+                char* regName = proc->getRegName(c->getSubExp1());
+                std::map<char*, AssemblyArgument*>::iterator mmit;
+                AssemblyArgument* arg  = NULL;
+                for (mmit = replacement.begin(); mmit!= replacement.end(); mmit++){
+                    //std::cout<<(*mmit).second->kind<<endl;
+                    if(strcmp((*mmit).first, regName) == 0 && (*mmit).second->kind == IMMEDIATE_INT){
+                            arg = (*mmit).second;
+                    }
+                }
+                if (arg){
+                    //std::cout<<regName<<replacement[regName]->value.i<<std::endl;
+                    result->type = 2;
+                    result->variable = new Const(arg->value.i);
+                }
+            }
+        } else {
+            result->type = 3;
+        }
+        break;
+    default:
+        result->type = 3;
+    }
+    //std::cout<<result->type<<endl;
 
+    return result;
+}
 
 // FixProcVisitor class
 

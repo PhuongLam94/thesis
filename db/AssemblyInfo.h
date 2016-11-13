@@ -49,6 +49,7 @@ class UnionDefine{
 public:
         char* byteVar;
         map<int, char*>* bitVar;
+        int byteVarValue;
         void prints(){
             cout << "Byte var: " << byteVar <<endl;
             cout << "Bit vars: "<<endl;

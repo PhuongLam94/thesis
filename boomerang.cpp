@@ -350,7 +350,7 @@ int Boomerang::parseCmd(int argc, const char **argv)
 				return 1;
 			}
 			int indent = 0;
-			((UserProc*)proc)->decompile(new ProcList, indent);
+            ((UserProc*)proc)->decompile(new ProcList, indent, prog->getMap());
 		} else {
 			prog->decompile();
 		}
@@ -1221,9 +1221,10 @@ int Boomerang::decompile(const char *fname, const char *pname)
 				u->printAST();
 			}
     }
-    if(!prog->unionCheck()){
-        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION IN YOUR CODE, CANNOT CONTINUE TO DECOMPILE."<<std::endl;
-    } else{
+    //prog->constantPropagation();
+//    if(!prog->unionCheck()){
+//        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION IN YOUR CODE, CANNOT CONTINUE TO DECOMPILE."<<std::endl;
+//    } else{
     std::cout << "generating code...\n";
 	prog->generateCode();
 
@@ -1231,7 +1232,7 @@ int Boomerang::decompile(const char *fname, const char *pname)
 
 	if (Boomerang::get()->ofsIndCallReport)
 		ofsIndCallReport->close();
-    }
+    //}
 	time_t end;
 	time(&end);
 	int hours = (int)((end-start) / 60 / 60);

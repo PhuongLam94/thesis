@@ -36,7 +36,8 @@ class Statement;
 class StatementSet;
 class Cluster;
 class XMLProgParser;
-
+class UnionDefine;
+class ConstantVariable;
 typedef std::map<ADDRESS, Proc*, std::less<ADDRESS> > PROGMAP;
 
 class Global {
@@ -70,7 +71,8 @@ public:
 virtual				~Prog();
 					Prog(const char* name);			// Constructor with name
 		void		setFrontEnd(FrontEnd* fe);
-		void		setName(const char *name);		// Set the name of this program
+                void            constantPropagation();
+                void		setName(const char *name);		// Set the name of this program
 		Proc*		setNewProc(ADDRESS uNative);	// Set up new proc
 		// Return a pointer to a new proc
 		Proc*		newProc(const char* name, ADDRESS uNative, bool bLib = false);
@@ -286,8 +288,10 @@ virtual				~Prog();
 		// This does extra processing on a constant.  The Exp* is expected to be a Const,
 		// and the ADDRESS is the native location from which the constant was read.
 		Exp			*addReloc(Exp *e, ADDRESS lc);
+                std::map<Exp*, ConstantVariable*>& getMap(){return map;}
 
 protected:
+                std::map<Exp*, ConstantVariable*> map;
 		BinaryFile*	pBF;					// Pointer to the BinaryFile object for the program
 		FrontEnd	*pFE;					// Pointer to the FrontEnd object for the project
 
@@ -301,7 +305,7 @@ protected:
 		DataIntervalMap globalMap;			// Map from address to DataInterval (has size, name, type)
 		int			m_iNumberedProc;		// Next numbered proc will use this
 		Cluster		*m_rootCluster;			// Root of the cluster tree
-
+                std::list<UnionDefine*> unionDefine;
 		friend class XMLProgParser;
 };	// class Prog
 

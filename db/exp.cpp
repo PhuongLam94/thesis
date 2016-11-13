@@ -39,7 +39,7 @@
 #include "visitor.h"
 #include "log.h"
 #include <iomanip>			// For std::setw etc
-
+#include "worklist.h"
 extern char debug_buffer[];		 ///< For prints functions
 
 /*==============================================================================
@@ -3611,7 +3611,22 @@ bool Unary::accept(ExpVisitor* v) {
 	if (ret) ret = subExp1->accept(v);
 	return ret;
 }
-
+ConstantVariable* Unary::accept(EvalExpressionVisitor *v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::map<Exp*, ConstantVariable*> map1;
+    return v->visit(this, m, replacement, proc);
+    //return NULL;
+    //return v->visit((Unary*)this);
+}
+ConstantVariable* Const::accept(EvalExpressionVisitor *v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::map<Exp*, ConstantVariable*> map1;
+    return v->visit(this, m, replacement, proc);
+    //return NULL;//v->visit(this);
+}
+ConstantVariable* Binary::accept(EvalExpressionVisitor *v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    std::map<Exp*, ConstantVariable*> map1;
+    return v->visit(this, m, replacement, proc);
+    //return NULL;//v->visit(this);
+}
 bool Binary::accept(ExpVisitor* v) {
     assert(subExp1 && subExp2);
 

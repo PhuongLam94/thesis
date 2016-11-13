@@ -268,7 +268,8 @@ extern bool first_line;
 Exp* byte_present(char * reg, std::map<string, int>* symTable){
     Exp* exp = NULL;
     unsigned num = map_sfr(reg, symTable);
-    exp = new Binary(opMemberAccess,Location::regOf(num), new Const("byte"));
+    //exp = new Binary(opMemberAccess,Location::regOf(num), new Const("byte"));
+    exp = Location::regOf(num);
     std::cout<<"BYTE PRESENT: "<<exp->prints()<<endl;
     return exp;
 }
@@ -776,13 +777,13 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         result.rtl = new RTL(pc, stmts);
         Assign * return_s;
         std::list<char*>::iterator br;
-        for (br = bitReg.begin(); br != bitReg.end(); ++ br ){
-            if (strcmp("A",(*br)) == 0){
-                return_s = new Assign(new SizeType(8),(Exp *) Location::regOf(8),new Binary(opMemberAccess,Location::regOf(8), new Const("x")), NULL);
-                result.rtl->appendStmt(return_s);
-                break;
-            }
-        }
+//        for (br = bitReg.begin(); br != bitReg.end(); ++ br ){
+//            if (strcmp("A",(*br)) == 0){
+//                return_s = new Assign(new SizeType(8),(Exp *) Location::regOf(8),new Binary(opMemberAccess,Location::regOf(8), new Const("x")), NULL);
+//                result.rtl->appendStmt(return_s);
+//                break;
+//            }
+//        }
         result.rtl->appendStmt(new ReturnStatement);
         result.type = DD;
     }

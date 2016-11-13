@@ -36,7 +36,7 @@
 #if defined(_MSC_VER) && _MSC_VER <= 1200
 #pragma warning(disable:4786)
 #endif 
-
+#include "worklist.h"
 #include "gc.h"
 #include "types.h"
 #include "statement.h"
@@ -1840,41 +1840,7 @@ bool BasicBlock::makeUnion(std::list<UnionDefine*>& unionDefine, std::map<char*,
 
         }
     }
-    list<UnionDefine*>::iterator it2;
-    std::list<Statement*>* stmts = new list<Statement*>();
-    std::cout<<"NUM OF UNION FOUND: "<<unionDefine.size()<<endl;
-    for (it2 = unionDefine.begin(); it2 != unionDefine.end(); it2++){
-       // std::cout<<"LIST OF UNION DEFINE: "<<std::endl;
-        (*it2)->prints();
-        UnionDefine* ud = (*it2);
-        UnionType * ut_temp = new UnionType();
-        ut_temp->addType(new SizeType(8), "byte");
-        CompoundType* ct_temp = new CompoundType();
-        //ud->bitVar->
-        map<int,char*>::iterator mi;
-        for (int i=1; i<9; i++){
-            std::string temp;
-            if (ud->bitVar->find(i) != ud->bitVar->end()){
-                temp = std::string((*ud->bitVar)[i])+":1";
-            } else{
-                temp=string("bit")+std::to_string(i)+string(":1");
-            }
-            //std::cout<<"TEMP: "<<temp<<endl;
-            ct_temp->addType(new SizeType(8), temp.c_str());
-        }
-//        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
-//        {
-//            std::string temp(std::string((*mi).second)+":1");
-//            ct_temp->addType(new SizeType(8), temp.c_str());
-//        }
-        ut_temp->addType(ct_temp, "bits");
-        proc->addLocal(ut_temp, ud->byteVar,Location::local(ud->byteVar, proc));
 
-    }
-    list<Statement*>::iterator stit;
-    for(stit = stmts->begin(); stit != stmts->end(); stit++){
-        cout<<(*stit)->prints()<<endl;
-    }
     std::cout<<"==================================="<<std::endl;
     return true;
 }
@@ -1931,6 +1897,128 @@ bool BasicBlock::makeUnion(std::list<UnionDefine *> &unionDefine, char* bitVar, 
     }
     return true;
 }
+
+bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2)
+{
+    std::cout<<"==============================="<<endl;
+    std::cout<<"UNION MAKING AREA"<<endl;
+    UserProc* proc = NULL;
+    std::list<RTL*>::iterator rit;
+    bool accByteInserted = false;
+    for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++){
+        std::list<Statement*>& stmts = (*rit)->getList();
+        std::list<Statement*>::iterator sit;
+        for (sit = stmts.begin(); sit!=stmts.end(); sit++){
+           Statement* statement = (*sit);
+           if (!proc)
+               proc = statement->getProc();
+            LocationSet used;
+           statement->addUsedLocs(used);
+           LocationSet::iterator lit;
+           Exp* prevExp = NULL;
+           for (lit = used.begin(); lit != used.end(); lit++){
+               Exp *exp =(Exp*) (*lit);
+               if (exp->isSubscript())
+                   exp = exp->getSubExp1();
+
+               if (exp->isRegOf() && prevExp){
+                   char * bitVar = statement->getProc()->getRegName(exp);
+                   AssignSet reachIn = statement->reachIn;
+                   int aValue;
+                   int subscript = -1;
+                   Exp* aDefine = NULL;
+                   char* byteVar = NULL;
+                   map<Exp*, ConstantVariable*>::iterator mit;
+                   for (mit = statement->constantIn.begin(); mit != statement->constantIn.end(); mit++){
+                       Exp* exp = (*mit).first;
+                       if (exp->isSubscript() && exp->getSubExp1() == Location::regOf(8)){
+                           int temp = ((Const*) exp->getSubExp2())->getInt();
+                           if (temp>subscript && temp<statement->getNumber()){
+                               subscript = temp;
+                               aDefine = exp;
+                           }
+                       }
+                   }
+                   if (subscript!=-1){
+                       ConstantVariable* val = statement->constantIn[aDefine];
+                       if (val->variable->isMemOf()){
+                           aValue = ((Const*) val->variable->getSubExp1())->getInt();
+                           bool valid = makeUnion_new(unionDefine, byteVar, aValue, bitVar2);
+                           if (!valid)
+                               return false;
+                       } else {
+                           std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED TO A MEMORY LOCATION VALUE YET!";
+                           return false;
+                       }
+                   } else {
+                       std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED YET!";
+                       return false;
+                   }
+               }
+               if(exp->isRegOf() && string(statement->getProc()->getRegName(exp)).find("bits")!=string::npos)
+                prevExp = exp;
+           }
+
+        }
+    }
+    std::cout<<"==================================="<<std::endl;
+    return true;
+}
+
+bool BasicBlock::makeUnion_new(std::list<UnionDefine *> &unionDefine, char* bitVar, int byteVarValue, map<char*, int> bitVar2, bool reCall){
+    //std::cout<<"MAKE UNION: "<<bitVar<<", "<<byteVar<<endl;
+    list<UnionDefine*>::iterator udIt;
+    int oldByteValue = findByteVarValue(bitVar, unionDefine);
+    if (oldByteValue!=-1 && !reCall && oldByteValue != byteVarValue){
+        std::cout<<"RULE IS BROKEN, "<<bitVar<<" HAS BEEN DEFINED AS BIT VAR OF m["<<oldByteValue<<"], NOT m["<<byteVarValue<<"]"<<endl;
+        return false;
+    }
+    bool byteExist = false;
+    for (udIt = unionDefine.begin(); udIt != unionDefine.end(); udIt++){
+         UnionDefine* ud = (*udIt);
+        if(ud->byteVarValue == byteVarValue){
+            byteExist = true;
+            map<int, char*>::iterator mit;
+            bool bitExist = false;
+            for (mit = ud->bitVar->begin(); mit != ud->bitVar->end(); mit++){
+                if (strcmp(bitVar, (*mit).second) == 0 )
+                    bitExist = true;
+            }
+            if (!bitExist){
+                int num = findBitNum(bitVar, bitVar2);
+                if(num == -1){
+                    std::cout<<"RULE IS BROKEN, THERE IS NOT ANY BIT VAR NAMED "<<bitVar<<endl;
+                    return false;
+                }
+                if(ud->bitVar->find(num) != ud->bitVar->end()){
+                    std::cout<<"RULE IS BROKEN, THE BIT NO "<<std::dec<<num<<" OF BYTE VAR "<<
+                               byteVarValue<<" HAS BEEN DEFINED AS "<<(*ud->bitVar)[num]<<" NOT "<<bitVar<<endl;
+                    return false;
+                } else {
+                    (*ud->bitVar)[num] = bitVar;
+                }
+            }
+            break;
+        }
+    }
+    if (!byteExist){
+        UnionDefine* ud = new UnionDefine();
+        ud->byteVarValue = byteVarValue;
+        ud->bitVar = new map<int, char*>();
+        int num = findBitNum(bitVar, bitVar2);
+        if (num == -1){
+            std::cout<<"RULE IS BROKEN, THERE IS NOT ANY BIT VAR NAMED "<<bitVar<<endl;
+            return false;
+        }
+        (*ud->bitVar)[num] = bitVar;
+        unionDefine.push_back(ud);
+        //std::cout<<"NUM UNION FOUND: "<<unionDefine.size()<<endl;
+        return makeUnion_new(unionDefine, bitVar, byteVarValue, bitVar2, true);
+    }
+    return true;
+}
+
+
 int BasicBlock::findBitNum(char* bitVar, map<char*, int> mapBit){
     map<char*, int>::iterator it;
     for (it = mapBit.begin(); it!=mapBit.end(); it++){
@@ -1953,7 +2041,19 @@ char* BasicBlock::findByteVar(char* bitVar, list<UnionDefine*> unionDefine, User
     }
     return NULL;
 }
-
+int BasicBlock::findByteVarValue(char* bitVar, list<UnionDefine*> unionDefine, UserProc* proc){
+    list<UnionDefine*>::iterator it;
+    for (it = unionDefine.begin(); it != unionDefine.end(); it++){
+        UnionDefine* ud = (*it);
+        map<int, char*>::iterator mit;
+        for (mit = ud->bitVar->begin(); mit != ud->bitVar->end(); mit++){
+            if (strcmp((*mit).second, bitVar) == 0){
+                return (ud->byteVarValue);
+            }
+        }
+    }
+    return -1;
+}
 bool BasicBlock::calcReachingDef(){
     //std::cout<<"CALC REACHING DEFINITION CALLED, NUM OF RTL: "<<m_pRtls->size()<<std::endl;
     AssignSet reachLoc;

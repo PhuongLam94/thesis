@@ -531,7 +531,11 @@ public:
                 void            checkUnion(std::list<UnionDefine*> unionDefine);
                 bool            makeUnion(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2);
                 bool            makeUnion(std::list<UnionDefine*>& unionDefine, char* bitVar, char* byteVar, std::map<char*, int> bitVar2, bool reCall=false);
+                bool            makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2);
+                bool            makeUnion_new(std::list<UnionDefine*>& unionDefine, char* bitVar, int byteVarValue, std::map<char*, int> bitVar2, bool reCall=false);
                 char* findByteVar(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc=NULL);
+                int findByteVarValue(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc=NULL);
+
                 int findBitNum(char* bitVar, std::map<char*, int> mapBit);
                 void            getReachIn(AssignSet& reach);
 		// Find indirect jumps and calls
