@@ -744,6 +744,7 @@ virtual Exp*		polySimplify(bool& bMod);
 		// Visitation
 virtual bool		accept(ExpVisitor* v);
 virtual Exp*		accept(ExpModifier* v);
+virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 
 virtual	Type*		ascendType();
 virtual void		descendType(Type* parentType, bool& ch, Statement* s);

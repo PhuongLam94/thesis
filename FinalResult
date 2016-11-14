@@ -1,9 +1,10 @@
 bb
 		MOV
+					 DPTR 
+					 OPTIONS + 10 
+		MOV
 					 A 
-					 OPTIONS 
+					 OPTIONS + 10 
 		SETB
 					 TESTUPS1 
-		CLR
-					 A 
 		RET

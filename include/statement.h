@@ -141,6 +141,8 @@ protected:
 #if		USE_DOMINANCE_NUMS
 		int			dominanceNum;	// Like a statement number, but has dominance properties
 public:
+                bool isBitUse = false;
+                char* bitName = NULL;
 		int			getDomNumber() {return dominanceNum;}
 		void		setDomNumber(int dn) {dominanceNum = dn;}
                 AssignSet           reachIn;

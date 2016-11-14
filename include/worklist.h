@@ -14,6 +14,7 @@ class Statement;
 class Binary;
 class Const;
 class Unary;
+class TypedExp;
 class Exp;
 class AssemblyArgument;
 class UserProc;
@@ -62,5 +63,6 @@ public:
     ConstantVariable* visit(Const* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
     ConstantVariable* visit(Binary* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
     ConstantVariable* visit(Unary* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
+    ConstantVariable* visit(TypedExp* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 
 };

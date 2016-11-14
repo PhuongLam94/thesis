@@ -39,6 +39,7 @@ class UnionDefine;
 struct SWITCH_INFO;				// Declared in include/statement.h
 class AssemblyArgument;
 typedef BasicBlock* PBB;
+class ConstantVariable;
 
 /*	*	*	*	*	*	*	*	*	*	*	*	*	*	*	*\
 *															 *
@@ -531,7 +532,7 @@ public:
                 void            checkUnion(std::list<UnionDefine*> unionDefine);
                 bool            makeUnion(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2);
                 bool            makeUnion(std::list<UnionDefine*>& unionDefine, char* bitVar, char* byteVar, std::map<char*, int> bitVar2, bool reCall=false);
-                bool            makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2);
+                bool            makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2, std::map<Exp*, ConstantVariable*> mapExp);
                 bool            makeUnion_new(std::list<UnionDefine*>& unionDefine, char* bitVar, int byteVarValue, std::map<char*, int> bitVar2, bool reCall=false);
                 char* findByteVar(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc=NULL);
                 int findByteVarValue(char* bitVar, std::list<UnionDefine*> unionDefine, UserProc* proc=NULL);

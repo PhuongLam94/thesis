@@ -350,7 +350,7 @@ int Boomerang::parseCmd(int argc, const char **argv)
 				return 1;
 			}
 			int indent = 0;
-            ((UserProc*)proc)->decompile(new ProcList, indent, prog->getMap());
+            ((UserProc*)proc)->decompile(new ProcList, indent, prog->getMap(), prog->getUnionDefine());
 		} else {
 			prog->decompile();
 		}

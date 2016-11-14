@@ -289,7 +289,7 @@ virtual				~Prog();
 		// and the ADDRESS is the native location from which the constant was read.
 		Exp			*addReloc(Exp *e, ADDRESS lc);
                 std::map<Exp*, ConstantVariable*>& getMap(){return map;}
-
+                std::list<UnionDefine*>& getUnionDefine(){return unionDefine;}
 protected:
                 std::map<Exp*, ConstantVariable*> map;
 		BinaryFile*	pBF;					// Pointer to the BinaryFile object for the program

@@ -7,6 +7,7 @@ using namespace std;
 
 
 enum ARGS_KIND{
+    UNKNOWN = -1,
         STRING = 0,
         DIRECT_INT = 1,
         DIRECT_FLOAT = 2,

@@ -804,7 +804,10 @@ void Terminal::print(std::ostream& os, bool html) {
 //	 Unary	//
 //	//	//	//
 void Unary::print(std::ostream& os, bool html) {
+
+
 	Exp* p1 = ((Unary*)this)->getSubExp1();
+    //std::cout<<"Unary is called "<<p1->isIntConst()<<", "<<p1->prints()<<std::endl;
 	switch (op) {
 		//	//	//	//	//	//	//
 		//	x[ subexpression ]	//
@@ -3610,6 +3613,11 @@ bool Unary::accept(ExpVisitor* v) {
 	if (override) return ret;	// Override the rest of the accept logic
 	if (ret) ret = subExp1->accept(v);
 	return ret;
+}
+ConstantVariable* TypedExp::accept(EvalExpressionVisitor *v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
+    return v->visit(this, m, replacement, proc);
+    //return NULL;
+    //return v->visit((Unary*)this);
 }
 ConstantVariable* Unary::accept(EvalExpressionVisitor *v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc){
     std::map<Exp*, ConstantVariable*> map1;

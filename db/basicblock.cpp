@@ -1898,7 +1898,7 @@ bool BasicBlock::makeUnion(std::list<UnionDefine *> &unionDefine, char* bitVar, 
     return true;
 }
 
-bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2)
+bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2, std::map<Exp*, ConstantVariable*> mapExp)
 {
     std::cout<<"==============================="<<endl;
     std::cout<<"UNION MAKING AREA"<<endl;
@@ -1910,63 +1910,55 @@ bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<ch
         std::list<Statement*>::iterator sit;
         for (sit = stmts.begin(); sit!=stmts.end(); sit++){
            Statement* statement = (*sit);
-           if (!proc)
-               proc = statement->getProc();
-            LocationSet used;
-           statement->addUsedLocs(used);
-           LocationSet::iterator lit;
-           Exp* prevExp = NULL;
-           for (lit = used.begin(); lit != used.end(); lit++){
-               Exp *exp =(Exp*) (*lit);
-               if (exp->isSubscript())
-                   exp = exp->getSubExp1();
-
-               if (exp->isRegOf() && prevExp){
-                   char * bitVar = statement->getProc()->getRegName(exp);
-                   AssignSet reachIn = statement->reachIn;
-                   int aValue;
-                   int subscript = -1;
-                   Exp* aDefine = NULL;
-                   char* byteVar = NULL;
-                   map<Exp*, ConstantVariable*>::iterator mit;
-                   for (mit = statement->constantIn.begin(); mit != statement->constantIn.end(); mit++){
-                       Exp* exp = (*mit).first;
-                       if (exp->isSubscript() && exp->getSubExp1() == Location::regOf(8)){
-                           int temp = ((Const*) exp->getSubExp2())->getInt();
-                           if (temp>subscript && temp<statement->getNumber()){
-                               subscript = temp;
-                               aDefine = exp;
-                           }
+           //std::cout<<"Bit use: "<<statement->isBitUse<<", "<<(statement->bitName==NULL?"":statement->bitName)<<endl;
+           if (statement->isBitUse){
+               std::cout<<"Map: "<<mapExp.size()<<endl;
+               int aValue;
+               int subscript = -1;
+               char* bitVar = statement->bitName;
+               Exp* aDefine = NULL;
+               map<Exp*, ConstantVariable*>::iterator mit;
+               for (mit = mapExp.begin(); mit != mapExp.end(); mit++){
+                   Exp* exp = (*mit).first;
+                   //std::cout<<exp->prints()<<", "<<exp->isSubscript()<<endl;
+                   if (exp->isSubscript() && (*exp->getSubExp1() == *Location::regOf(8))){
+                       int temp = ((RefExp*) exp)->getDef()->getNumber();
+                       //std::cout<<"Temp: "<<temp<<endl;
+                       if (temp>subscript && temp<statement->getNumber()){
+                           subscript = temp;
+                           aDefine = exp;
                        }
-                   }
-                   if (subscript!=-1){
-                       ConstantVariable* val = statement->constantIn[aDefine];
-                       if (val->variable->isMemOf()){
-                           aValue = ((Const*) val->variable->getSubExp1())->getInt();
-                           bool valid = makeUnion_new(unionDefine, byteVar, aValue, bitVar2);
-                           if (!valid)
-                               return false;
-                       } else {
-                           std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED TO A MEMORY LOCATION VALUE YET!";
-                           return false;
-                       }
-                   } else {
-                       std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED YET!";
-                       return false;
                    }
                }
-               if(exp->isRegOf() && string(statement->getProc()->getRegName(exp)).find("bits")!=string::npos)
-                prevExp = exp;
+               if (subscript!=-1){
+                   ConstantVariable* val = mapExp[aDefine];
+                   if (val->type == 2){
+                       aValue = ((Const*) val->variable)->getInt();
+                       //std::cout<<"aValue: "<<aValue<<", "<<bitVar<<endl;
+                       bool valid = makeUnion_new(unionDefine, bitVar, aValue, bitVar2);
+                       if (!valid)
+                           return false;
+                   } else {
+                       std::cout<<"ERROR: A DO NOT HAVE A CONSTANT VALUE AT THIS POINT OF PROGRAM"<<endl;
+                       return false;
+                   }
+               } else {
+                   std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED YET!";
+                   return false;
+               }
            }
+           if (!proc)
+               proc = statement->getProc();
 
-        }
     }
+    }
+    std::cout<<"UnionDefine size: "<<unionDefine.size()<<endl;
     std::cout<<"==================================="<<std::endl;
     return true;
 }
 
 bool BasicBlock::makeUnion_new(std::list<UnionDefine *> &unionDefine, char* bitVar, int byteVarValue, map<char*, int> bitVar2, bool reCall){
-    //std::cout<<"MAKE UNION: "<<bitVar<<", "<<byteVar<<endl;
+    //std::cout<<"MAKE UNION: "<<bitVar<<", "<<byteVarValue<<endl;
     list<UnionDefine*>::iterator udIt;
     int oldByteValue = findByteVarValue(bitVar, unionDefine);
     if (oldByteValue!=-1 && !reCall && oldByteValue != byteVarValue){

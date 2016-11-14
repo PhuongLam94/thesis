@@ -276,41 +276,43 @@ Exp* byte_present(char * reg, std::map<string, int>* symTable){
 Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
     list<UnionDefine*>::iterator li;
     std::string reg_string(reg);
-    bool bitVar = pos>8 || pos <1;
-        if (bitVar){
-            Exp* exp = NULL;
-            unsigned num = 8;
-            Exp * exp1 = Location::regOf(num);
-            string bits = "bits"+string(reg);
-            unsigned num1 = map_sfr(bits.c_str(), symTable, num);
-            Exp * exp2 = new Binary(opMemberAccess,exp1, Location::regOf(num1));
-            exp = new Binary(opMemberAccess,exp2, Location::regOf(map_sfr(reg, symTable, num, num1)));
-            std::cout<<"ACCESS BIT: "<<exp->prints()<<", "<<bits<<endl;
-            //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
-            //exp = Location::regOf(num);
-            //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
-            return exp;
-        }
+    return Location::regOf(map_sfr(reg, symTable));
+//    bool bitVar = pos>8 || pos <1;
+//        if (bitVar){
+//            Exp* exp = NULL;
+//            exp = Location::regOf(map_sfr(reg, symTable));
+//            unsigned num = 8;
+//            Exp * exp1 = Location::regOf(num);
+//            string bits = "bits"+string(reg);
+//            unsigned num1 = map_sfr(bits.c_str(), symTable, num);
+//            Exp * exp2 = new Binary(opMemberAccess,exp1, Location::regOf(num1));
+//            exp = new Binary(opMemberAccess,exp2, Location::regOf(map_sfr(reg, symTable, num, num1)));
+//            std::cout<<"ACCESS BIT: "<<exp->prints()<<", "<<bits<<endl;
+//            //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
+//            //exp = Location::regOf(num);
+//            //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
+//            return exp;
+//        }
 
-    if(!bitVar){
-        Exp* exp = NULL;
-        unsigned num = map_sfr(reg, symTable);
+//    if(!bitVar){
+//        Exp* exp = NULL;
+//        unsigned num = map_sfr(reg, symTable);
 
-        std::stringstream sstm;
-        sstm << "bit" << pos;
-        std::string name = sstm.str();
-        char *bit =  new char[name.length() + 1];
-        strcpy(bit, name.c_str());
+//        std::stringstream sstm;
+//        sstm << "bit" << pos;
+//        std::string name = sstm.str();
+//        char *bit =  new char[name.length() + 1];
+//        strcpy(bit, name.c_str());
 
-        Exp * exp1 = Location::regOf(num);
-        Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("bits"));
-        exp = new Binary(opMemberAccess,exp2, new Const(bit));
+//        Exp * exp1 = Location::regOf(num);
+//        Exp * exp2 = new Binary(opMemberAccess,exp1, new Const("bits"));
+//        exp = new Binary(opMemberAccess,exp2, new Const(bit));
 
-        //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
-        //exp = Location::regOf(num);
-        //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
-        return exp;
-    }
+//        //exp = new Binary(opMemberAccess,new Binary(opMemberAccess, Location::regOf(num), new Const("a")), new Const("b"));
+//        //exp = Location::regOf(num);
+//        //exp = new Ternary(opAt, Location::regOf(num), new Const(pos), new Const(pos));
+//        return exp;
+//    }
 }
 Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
     Exp* exp;
@@ -321,6 +323,7 @@ Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
     bool lhs = true;
     OPER op;
     unsigned op1;
+    ARGS_KIND kind = UNKNOWN;
     for (ai = expr->argList.begin(); ai != expr->argList.end(); ++ ai){
         switch((*ai)->kind){
             case 7 : //OPERATOR
@@ -339,18 +342,20 @@ Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
             {
                 op1 = map_sfr(std::string((*ai)->value.c), symTable);
                 if(lhs){
-
-                    if (op1 <= 8)
-                        exp1 = Location::regOf(op1);
-                    else
-                        exp1 = Location::memOf(Location::regOf(op1));
+                    kind = ARGS_KIND(6);
+                    exp1 = Location::regOf(op1);
+//                    if (op1 <= 8)
+//                        exp1 = Location::regOf(op1);
+//                    else
+//                        exp1 = Location::memOf(Location::regOf(op1));
                     lhs = false;
                 }
                 else{
-                    if (op1 <= 8)
-                        exp2 = Location::regOf(op1);
-                    else
-                        exp2 = Location::memOf(Location::regOf(op1));
+                    exp2 = Location::regOf(op1);
+//                    if (op1 <= 8)
+//                        exp2 = Location::regOf(op1);
+//                    else
+//                        exp2 = Location::memOf(Location::regOf(op1));
 
                 }
                 break;
@@ -359,28 +364,31 @@ Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
             {   imm = true;
                 op1 = map_sfr(std::string((*ai)->value.c), symTable);
                 if(lhs){
-                    if (op1 <= 8)
-                        exp1 = Location::regOf(op1);
-                    else
-                        exp1 = Location::memOf(Location::regOf(op1));
+                    kind = ARGS_KIND(5);
+                    exp1 = Location::regOf(op1);
+//                    if (op1 <= 8)
+//                        exp1 = Location::regOf(op1);
+//                    else
+//                        exp1 = Location::memOf(Location::regOf(op1));
                     lhs = false;
                 }
                 else{
-                    if (op1 <= 8)
-                        exp2 = Location::regOf(op1);
-                    else
-                        exp2 = Location::memOf(Location::regOf(op1));
+                    exp2 = Location::regOf(op1);
+//                    if (op1 <= 8)
+//                        exp2 = Location::regOf(op1);
+//                    else
+//                        exp2 = Location::memOf(Location::regOf(op1));
                 }
                 break;
             }
             case 1:
             {
                 if(lhs){
+                    kind = ARGS_KIND(1);
                     exp1 = new Const((*ai)->value.i);
                     lhs = false;
                 }
                 else{
-
                     exp2 = new Const((*ai)->value.i);
                 }
 
@@ -390,6 +398,7 @@ Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
             {
                 imm = true;
                 if(lhs){
+                    kind = ARGS_KIND(4);
                     exp1 = new Const((*ai)->value.i);
                     lhs = false;
                 }
@@ -405,11 +414,23 @@ Exp* binary_expr(AssemblyExpression* expr, std::map<string, int>* symTable){
         }
 
     }
+    //std::cout<<"KIND EXPR: "<<kind<<endl;
     PointerType *t = new PointerType(new SizeType(8));
-    if (imm)
+    switch (kind){
+        case ID:
+    case DIRECT_INT:
+        exp = Location::memOf(new TypedExp((Type*) t, new Binary(op, exp1, exp2)));
+        break;
+    case IMMEDIATE_INT:
+    case IMMEDIATE_ID:
         exp = new Binary(op, exp1, exp2);
-    else
-        exp = Location::memOf(new TypedExp((Type*) t,new Binary(op, exp1, exp2)));
+        break;
+    }
+
+//    if (imm)
+//        exp = new Binary(op, exp1, exp2);
+//    else
+//        exp = Location::memOf(new TypedExp((Type*) t,new Binary(op, exp1, exp2)));
     return exp;
 }
 
@@ -796,7 +817,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             stmts = instantiate(pc, "JNB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable), new Const(100));
         else if (opcode == "JBC"){} //TODO:
             //stmts = instantiate(pc, "JBC_DIR_IMM", new Const(arg1->value.i), new Const(100));
-
+        StatementList::iterator it = stmts->begin();
+        (*it)->isBitUse = true;
+        (*it)->bitName = arg1->value.c;
         result.rtl = new RTL(pc, stmts);
         BranchStatement* jump = new BranchStatement;
         result.rtl->appendStmt(jump);
@@ -808,6 +831,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
         stmts = instantiate(pc, "SETB_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
+        StatementList::iterator it = stmts->begin();
+        (*it)->isBitUse = true;
+        (*it)->bitName = arg1->value.c;
     }
     else if (opcode == "ORL" || opcode == "ANL" || opcode == "XRL") {
         stringstream ss;
@@ -921,6 +947,9 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         ei = Line->expList->begin();
         AssemblyArgument* arg1 = (*ei)->argList.front();
         stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
+        StatementList::iterator it = stmts->begin();
+        (*it)->isBitUse = true;
+        (*it)->bitName = arg1->value.c;
     }
     else if (opcode == "NOP") {
     }
