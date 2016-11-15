@@ -18,6 +18,8 @@ class TypedExp;
 class Exp;
 class AssemblyArgument;
 class UserProc;
+class Ternary;
+class RefExp;
 class WorkList{
 protected:
     int typeOfWorkList;//1: flow work list, 2: ssa work list
@@ -47,6 +49,9 @@ class ConstantVariable{
 public:
     int type; //1: top, 2: constant, 3: bottom
     Exp* variable; //two form: Const(i), i is an integer and m[Const(i)], i is an integer
+    ConstantVariable(){
+        type = 3;
+    }
 };
 class MapExpConstant{
 public:
@@ -64,5 +69,6 @@ public:
     ConstantVariable* visit(Binary* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
     ConstantVariable* visit(Unary* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
     ConstantVariable* visit(TypedExp* c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
-
+    ConstantVariable* visit(Ternary *c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
+    ConstantVariable* visit(RefExp *c, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 };

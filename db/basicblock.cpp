@@ -1898,21 +1898,35 @@ bool BasicBlock::makeUnion(std::list<UnionDefine *> &unionDefine, char* bitVar, 
     return true;
 }
 
+void BasicBlock::replaceAcc(std::list<UnionDefine *> unionDefine, std::map<Exp *, ConstantVariable *> m){
+    std::list<RTL*>::iterator rit;
+    for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++){
+        std::list<Statement*>& stmts = (*rit)->getList();
+        std::list<Statement*>::iterator sit;
+        for (sit = stmts.begin(); sit!=stmts.end(); sit++){
+           Statement* statement = (*sit);
+           if (statement->isBitUse){
+
+           }
+        }
+    }
+}
+
 bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<char*, AssemblyArgument*> replacement, std::map<char*, int> bitVar2, std::map<Exp*, ConstantVariable*> mapExp)
 {
     std::cout<<"==============================="<<endl;
     std::cout<<"UNION MAKING AREA"<<endl;
     UserProc* proc = NULL;
     std::list<RTL*>::iterator rit;
-    bool accByteInserted = false;
     for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++){
         std::list<Statement*>& stmts = (*rit)->getList();
         std::list<Statement*>::iterator sit;
         for (sit = stmts.begin(); sit!=stmts.end(); sit++){
            Statement* statement = (*sit);
-           //std::cout<<"Bit use: "<<statement->isBitUse<<", "<<(statement->bitName==NULL?"":statement->bitName)<<endl;
-           if (statement->isBitUse){
-               std::cout<<"Map: "<<mapExp.size()<<endl;
+           std::cout<<"Statement: "<<statement->prints()<<endl;
+           std::cout<<"Bit use: "<<statement->isBitUse<<", "<<(statement->bitName==NULL?"":statement->bitName)<<endl;
+           if (statement->isBitUse && string(statement->bitName).find("specbits") == string::npos){
+               //std::cout<<"Map: "<<mapExp.size()<<endl;
                int aValue;
                int subscript = -1;
                char* bitVar = statement->bitName;
@@ -1932,6 +1946,7 @@ bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<ch
                }
                if (subscript!=-1){
                    ConstantVariable* val = mapExp[aDefine];
+                   //std::cout<<"aDefine: "<<aDefine->prints()<<endl;
                    if (val->type == 2){
                        aValue = ((Const*) val->variable)->getInt();
                        //std::cout<<"aValue: "<<aValue<<", "<<bitVar<<endl;
@@ -1940,6 +1955,12 @@ bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<ch
                            return false;
                    } else {
                        std::cout<<"ERROR: A DO NOT HAVE A CONSTANT VALUE AT THIS POINT OF PROGRAM"<<endl;
+                       std::cout<<"STATEMENT: "<<statement->prints()<<endl;
+                       std::cout<<"A VALUE: "<<val->variable->prints()<<", "<<subscript<<endl;
+//                       for (mit = mapExp.begin(); mit != mapExp.end(); mit++){
+//                           std::cout<<"Exp: "<<(*mit).first->prints()<<endl;
+//                           std::cout<<"Value type: "<<(*mit).second->type<<endl;
+//                       }
                        return false;
                    }
                } else {

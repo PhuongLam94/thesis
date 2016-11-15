@@ -1222,9 +1222,9 @@ int Boomerang::decompile(const char *fname, const char *pname)
 			}
     }
     //prog->constantPropagation();
-//    if(!prog->unionCheck()){
-//        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION IN YOUR CODE, CANNOT CONTINUE TO DECOMPILE."<<std::endl;
-//    } else{
+    if(!prog->unionCheck()){
+        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION IN YOUR CODE, CANNOT CONTINUE TO DECOMPILE."<<std::endl;
+    } else{
     std::cout << "generating code...\n";
 	prog->generateCode();
 
@@ -1232,7 +1232,7 @@ int Boomerang::decompile(const char *fname, const char *pname)
 
 	if (Boomerang::get()->ofsIndCallReport)
 		ofsIndCallReport->close();
-    //}
+    }
 	time_t end;
 	time(&end);
 	int hours = (int)((end-start) / 60 / 60);

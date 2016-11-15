@@ -1353,53 +1353,9 @@ void Prog::decompile() {
 	// Note: removeUnusedLocals() is now in UserProc::generateCode()
 
 	removeUnusedGlobals();
-    std::map<char*, AssemblyArgument*> replacement = ((UserProc*) (*entryProcs.begin()))->replacement;
-    std::map<char*, AssemblyArgument*>::iterator mit;
-    list<UnionDefine*>::iterator it2;
-    std::list<Statement*>* stmts = new list<Statement*>();
-    std::cout<<"NUM OF UNION FOUND: "<<unionDefine.size()<<endl;
-    for (it2 = unionDefine.begin(); it2 != unionDefine.end(); it2++){
-       // std::cout<<"LIST OF UNION DEFINE: "<<std::endl;
 
-        //(*it2)->prints();
-        UnionDefine* ud = (*it2);
-        bool existByte = false;
-        for (mit = replacement.begin(); mit!= replacement.end(); mit++){
 
-            if (ud->byteVarValue == ((AssemblyArgument*) (*mit).second)->value.i){
-                ud->byteVar = (*mit).first;
-                existByte = true;
-            }
-        }
-        if (!existByte){
-            ud->byteVar = strdup(string("LOCATION_"+to_string(ud->byteVarValue)).c_str());
-            std::cout<<"NOT EXIST BYTE NAME, AUTO NAME: "<<ud->byteVar<<endl;
-        }
-        ud->prints();
-        UnionType * ut_temp = new UnionType();
-        ut_temp->addType(new SizeType(8), "byte");
-        CompoundType* ct_temp = new CompoundType();
-        //ud->bitVar->
-        std::map<int,char*>::iterator mi;
-        for (int i=1; i<9; i++){
-            std::string temp;
-            if (ud->bitVar->find(i) != ud->bitVar->end()){
-                temp = std::string((*ud->bitVar)[i])+":1";
-            } else{
-                temp=string("bit")+std::to_string(i)+string(":1");
-            }
-            //std::cout<<"TEMP: "<<temp<<endl;
-            ct_temp->addType(new SizeType(8), temp.c_str());
-        }
-//        for (mi = ud->bitVar->begin(); mi != ud->bitVar->end(); ++mi)
-//        {
-//            std::string temp(std::string((*mi).second)+":1");
-//            ct_temp->addType(new SizeType(8), temp.c_str());
-//        }
-        ut_temp->addType(ct_temp, "bits");
-        globals.insert(new Global(ut_temp, NULL, ud->byteVar));
 
-    }
 
 }
 bool Prog::unionCheck(){

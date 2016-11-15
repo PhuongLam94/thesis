@@ -693,6 +693,7 @@ virtual Exp* genConstraints(Exp* restrictTo);
 		// Visitation
 virtual bool	accept(ExpVisitor* v);
 virtual Exp*	accept(ExpModifier* v);
+virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 
 virtual bool 		match(const char *pattern, std::map<std::string, Exp*> &bindings);
 
@@ -791,7 +792,7 @@ virtual Exp* 		clone();
 virtual bool 		operator==(const Exp& o) const;
 virtual bool 		operator< (const Exp& o) const;
 virtual bool		operator*=(Exp& o);
-
+virtual ConstantVariable* accept(EvalExpressionVisitor* v, std::map<Exp*, ConstantVariable*> m,std::map<char*, AssemblyArgument*> replacement, UserProc* proc);
 virtual void		print(std::ostream& os, bool html = false);
 virtual void		printx(int ind);
 //virtual int		getNumRefs() {return 1;}

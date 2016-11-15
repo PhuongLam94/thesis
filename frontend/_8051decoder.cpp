@@ -138,7 +138,7 @@ unsigned map_sfr(std::string name, std::map<string, int>* symbolTable, int byteV
                 break;
             }
         }
-        if (isDefined || name.find("bits") != string::npos ){
+        if (isDefined || name.find("specbits") != string::npos ){
         if (symbolTable->find(name) == symbolTable->end()){
             bool existed = false;
             int num;
@@ -160,6 +160,9 @@ unsigned map_sfr(std::string name, std::map<string, int>* symbolTable, int byteV
                 }
             } while (existed);
             (*symbolTable)[name] = num;
+            if (name.find("specbits") != string::npos){
+                std::cout<<"Name: "<<name<<", "<<num<<endl;
+            }
             return num;
         } else {
             return symbolTable->find(name)->second;
@@ -274,6 +277,9 @@ Exp* byte_present(char * reg, std::map<string, int>* symTable){
     return exp;
 }
 Exp* access_bit(char * reg, unsigned pos, std::map<string, int>* symTable){
+    if (pos>=1 && pos<=8){
+        reg = strdup(string("specbits"+to_string(pos)).c_str());
+    }
     list<UnionDefine*>::iterator li;
     std::string reg_string(reg);
     return Location::regOf(map_sfr(reg, symTable));
@@ -819,7 +825,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             //stmts = instantiate(pc, "JBC_DIR_IMM", new Const(arg1->value.i), new Const(100));
         StatementList::iterator it = stmts->begin();
         (*it)->isBitUse = true;
-        (*it)->bitName = arg1->value.c;
+        (*it)->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
         result.rtl = new RTL(pc, stmts);
         BranchStatement* jump = new BranchStatement;
         result.rtl->appendStmt(jump);
@@ -833,7 +839,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         stmts = instantiate(pc, "SETB_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
         StatementList::iterator it = stmts->begin();
         (*it)->isBitUse = true;
-        (*it)->bitName = arg1->value.c;
+        (*it)->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
     }
     else if (opcode == "ORL" || opcode == "ANL" || opcode == "XRL") {
         stringstream ss;
@@ -949,7 +955,7 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         stmts = instantiate(pc, "CLR_DIR", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable));
         StatementList::iterator it = stmts->begin();
         (*it)->isBitUse = true;
-        (*it)->bitName = arg1->value.c;
+        (*it)->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
     }
     else if (opcode == "NOP") {
     }

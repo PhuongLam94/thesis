@@ -179,7 +179,7 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
            } else {
                eval = rhs;
            }
-           std::cout<<"Eval: "<<eval->prints()<<", "<<eval->isConst()<<", "<<eval->getOper()<<std::endl;
+           //std::cout<<"Eval: "<<eval->prints()<<", "<<eval->isConst()<<", "<<eval->getOper()<<std::endl;
            val = eval->accept(v, map, replacement, this);
         }
         if (assign->isPhi()){
@@ -205,9 +205,11 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
                         continue;
                     }
                     if (val->type == 1){
-                        val = tempVal;
+                        val = new ConstantVariable();
+                        val->type = tempVal->type;
+                        val->variable = tempVal->variable->clone();
                     } else {
-                        if (val->variable != tempVal->variable){
+                        if (!((*val->variable) == (*tempVal->variable))){
                             val->type = 3;
                             break;
                         }
@@ -229,12 +231,15 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
         bool change = false;
         bool exist = false;
         Exp* newLHS = new RefExp(lhs, assign);
+        //std::cout<<"newLHS: "<<newLHS->prints()<<endl;
+        //std::cout<<"Map size: "<<map.size()<<endl;
         std::map<Exp*, ConstantVariable*>::iterator mmit;
         for (mmit = map.begin(); mmit != map.end(); mmit++){
+            //std::cout<<"Map item: "<<(*mmit).first->prints()<<", "<<((*mmit).second == NULL?"NULL":to_string((*mmit).second->type))<<endl;
             if ((*(*mmit).first) == (*newLHS)){
                 exist = true;
                 ConstantVariable* temp = (*mmit).second;
-                if ((temp->type!=val->type) ||  (temp->type!=3 &&!((*temp->variable) == (*val->variable)))){
+                if ( !temp || (temp->type!=val->type) ||  (temp->type!=3 &&!((*temp->variable) == (*val->variable)))){
 
                     change = true;
                     (*mmit).second = val;
@@ -246,6 +251,11 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
             map[newLHS] = val;
             //std::cout<<"New LHS: "<<assign->getNumber()<<endl;
         }
+//        if (assign->getNumber() == 18){
+//            std::cout<<"Exist: "<<exist<<", change: "<<change<<endl;
+//            std::cout<<"LHS: "<<newLHS->prints()<<endl;
+//            std::cout<<"Value: "<<map[newLHS]->type<<endl;
+//        }
         if (change){
             for (bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)){
                 //BasicBlock* temp = new BasicBlock();
@@ -256,6 +266,7 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
                     std::list<Statement*>::iterator sit;
                     for (sit = stmts.begin(); sit!=stmts.end(); sit++){
                        Statement* statement = (*sit);
+                       //std::cout<<"Statement: "<<statement->prints()<<", "<<statement->isPhi()<<endl;
                        bool isDes = false;
                        if (statement->isAssign()||statement->isPhi()){
                            LocationSet usedLoc;
@@ -263,8 +274,10 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
                                ((Assign*) statement)->getRight()->addUsedLocs(usedLoc);
                                isDes = usedLoc.exists(newLHS);
                            } else {
-                               PhiAssign* phiAssign = (PhiAssign*) assign;
+                               PhiAssign* phiAssign = (PhiAssign*) statement;
+                               //std::cout<<"Phi assign: "<<phiAssign->prints()<<endl;
                                for (int i=0; i<phiAssign->getNumDefs(); i++){
+                                   //std::cout<<"Def: "<<phiAssign->getStmtAt(i)<<endl;
                                    Assignment* temp = (Assignment*) phiAssign->getStmtAt(i);
                                    if (temp == assign)
                                        isDes = true;
@@ -281,7 +294,17 @@ void UserProc::constantPropagation(std::map<Exp*, ConstantVariable*>& map){
                 }
             }
         }
+//        if (assign->getNumber() == 18){
+//            std::cout<<"Exist: "<<exist<<", change: "<<change<<endl;
+//            std::cout<<"LHS: "<<newLHS->prints()<<endl;
+//            std::cout<<"Value: "<<map[newLHS]->type<<endl;
+//        }
     }
+    std::map<Exp*, ConstantVariable*>::iterator mit;
+//    for (mit = map.begin(); mit != map.end(); mit++){
+//        std::cout<<"Exp: "<<(*mit).first->prints()<<endl;
+//        std::cout<<"Value type: "<<(*mit).second->type<<endl;
+//    }
 }
 
 void Proc::setNativeAddress(ADDRESS a) {
@@ -1938,7 +1961,7 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 				}
 				if (DEBUG_UNUSED)
 					LOG << "removing unused statement " << s->getNumber() << " " << s << "\n";
-                if (!s->getAccAssign() && !s->isBitUse){
+                if (!s->getAccAssign() && !(s->isBitUse && !s->isAssign())){
                 removeStatement(s);
 				ll = stmts.erase(ll);	// So we don't try to re-remove it
                 change = true;
