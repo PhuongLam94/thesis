@@ -1358,6 +1358,36 @@ bool UserProc::unionCheck(std::list<UnionDefine*>& unionDefine, std::map<Exp*, C
                 return true;
 
 }
+void UserProc::replaceAcc(std::list<UnionDefine*>& unionDefine, std::map<Exp*, ConstantVariable*> mapExp) {
+        //std::cout<<"UNION CHECK OF PROC IS CALLED"<<endl;
+        if (VERBOSE)
+                LOG << "begin decompile(" << getName() << ")\n";
+
+        // Prevent infinite loops when there are cycles in the call graph (should never happen now)
+
+        if (status < PROC_DECODED)
+                // Can happen e.g. if a callee is visible only after analysing a switch statement
+                prog->reDecode(this);					// Actually decoding for the first time, not REdecoding
+
+        if (status < PROC_VISITED)
+                setStatus(PROC_VISITED); 					// We have at least visited this proc "on the way down"
+                                                // Append this proc to path
+         BB_IT it;
+                // Recurse to children first, to perform a depth first search
+                //initialiseDecompile();
+
+                // Look at each call, to do the DFS
+                for (PBB bb = cfg->getFirstBB(it); bb; bb = cfg->getNextBB(it)) {
+                    //bb->calcReachingDef();
+                    //bb->checkUnion(unionDefine);
+                    //unionDefine.clear();
+
+                   bb->replaceAcc(unionDefine, mapExp);
+                       //cout<<"proc check union is false"<<endl;
+                   status = PROC_FINAL;
+                }
+
+}
 
 /*	*	*	*	*	*	*	*	*	*	*	*
  *											*
@@ -1799,10 +1829,10 @@ void UserProc::remUnusedStmtEtc(std::map<Exp*, ConstantVariable*>&map, std::list
 	countRefs(refCounts);
     checkAccAssign();
     constantPropagation(map);
-    if(!unionCheck(unionDefine, map)){
-        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION MAKING, STOP DECOMPILING NOW..."<<endl;
-        exit(1);
-    }
+//    if(!unionCheck(unionDefine, map)){
+//        std::cout<<"THERE ARE SOME PROBLEMS WITH UNION MAKING, STOP DECOMPILING NOW..."<<endl;
+//        exit(1);
+//    }
 	// Now remove any that have no used
 	if (!Boomerang::get()->noRemoveNull)
 		remUnusedStmtEtc(refCounts);
@@ -1961,7 +1991,7 @@ void UserProc::remUnusedStmtEtc(RefCounter& refCounts) {
 				}
 				if (DEBUG_UNUSED)
 					LOG << "removing unused statement " << s->getNumber() << " " << s << "\n";
-                if (!s->getAccAssign() && !(s->isBitUse && !s->isAssign())){
+                if (!(s->isBitUse)){
                 removeStatement(s);
 				ll = stmts.erase(ll);	// So we don't try to re-remove it
                 change = true;

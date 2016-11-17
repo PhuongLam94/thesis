@@ -501,7 +501,9 @@ virtual bool		isNoReturn();
 		/// level.  indent is the indentation level; pass 0 at the top level
                 ProcSet*	decompile(ProcList* path, int& indent, std::map<Exp*, ConstantVariable*>&map, std::list<UnionDefine*>& unionDefine);
                 bool            unionCheck(std::list<UnionDefine*>& unionDefine,std::map<Exp*, ConstantVariable*> mapExp);
-		/// Initialise decompile: sort CFG, number statements, dominator tree, etc.
+                void            replaceAcc(std::list<UnionDefine*>& unionDefine,std::map<Exp*, ConstantVariable*> mapExp);
+
+                /// Initialise decompile: sort CFG, number statements, dominator tree, etc.
 		void		initialiseDecompile();
 		/// Prepare for preservation analysis only.
 		void		prePresDecompile();

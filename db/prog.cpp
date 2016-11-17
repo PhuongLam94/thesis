@@ -279,7 +279,7 @@ void Prog::generateCode(Cluster *cluster, UserProc *proc, bool intermixRTL) {
 			if (cluster == NULL || cluster == up->getCluster()) {
 				up->getCluster()->openStream("c");
 				code->print(up->getCluster()->getStream());
-                up->getCluster()->getStream()<<"//phuong.lam test\n";
+                //up->getCluster()->getStream()<<"//phuong.lam test\n";
 			}
 		}
     }
@@ -1393,6 +1393,7 @@ bool Prog::unionCheck(){
                     }
             }
     }
+
     std::map<char*, AssemblyArgument*> replacement = ((UserProc*) (*entryProcs.begin()))->replacement;
     std::map<char*, AssemblyArgument*>::iterator mit;
     list<UnionDefine*>::iterator it2;
@@ -1412,7 +1413,8 @@ bool Prog::unionCheck(){
             }
         }
         if (!existByte){
-            ud->byteVar = strdup("LOCATION_"+ud->byteVarValue);
+            ud->byteVar = strdup(string("LOCATION_"+to_string(ud->byteVarValue)).c_str());
+            std::cout<<"UD BYTE VAR: "<<ud->byteVar<<endl;
         }
         ud->prints();
         UnionType * ut_temp = new UnionType();
@@ -1422,11 +1424,10 @@ bool Prog::unionCheck(){
         std::map<int,char*>::iterator mi;
         for (int i=1; i<9; i++){
             std::string temp;
-            if (ud->bitVar->find(i) != ud->bitVar->end()){
-                temp = std::string((*ud->bitVar)[i])+":1";
-            } else{
-                temp=string("bit")+std::to_string(i)+string(":1");
+            if (ud->bitVar->find(i) == ud->bitVar->end()){
+                (*ud->bitVar)[i] = strdup(string("bit"+std::to_string(i)).c_str());
             }
+            temp = std::string((*ud->bitVar)[i])+":1";
             //std::cout<<"TEMP: "<<temp<<endl;
             ct_temp->addType(new SizeType(8), temp.c_str());
         }
@@ -1438,6 +1439,31 @@ bool Prog::unionCheck(){
         ut_temp->addType(ct_temp, "bits");
         globals.insert(new Global(ut_temp, NULL, ud->byteVar));
 
+    }
+    for (ee = entryProcs.begin(); ee != entryProcs.end(); ++ee) {
+    //std::cerr << "decompiling entry point" << (*ee)->getName() << "\n";
+            if (VERBOSE)
+                    LOG << "decompiling entry point " << (*ee)->getName() << "\n";
+            int indent = 0;
+            (*ee)->replaceAcc(unionDefine, map);
+
+    }
+
+    // Just in case there are any Procs not in the call graph.
+
+    if (Boomerang::get()->decodeMain && !Boomerang::get()->noDecodeChildren) {
+            bool foundone = true;
+            while (foundone) {
+                    foundone = false;
+                    for (pp = m_procs.begin(); pp != m_procs.end(); pp++) {
+                            UserProc* proc = (UserProc*)(*pp);
+                            if (proc->isLib()) continue;
+                            if (proc->isDecompiled()) continue;
+                            int indent = 0;
+                            proc->replaceAcc(unionDefine, map);
+                            foundone = true;
+                    }
+            }
     }
     return true;
 }

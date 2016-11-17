@@ -823,15 +823,21 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
             stmts = instantiate(pc, "JNB_DIR_IMM", access_bit(arg1->value.bit.reg,arg1->value.bit.pos, &symbolTable), new Const(100));
         else if (opcode == "JBC"){} //TODO:
             //stmts = instantiate(pc, "JBC_DIR_IMM", new Const(arg1->value.i), new Const(100));
-        StatementList::iterator it = stmts->begin();
-        (*it)->isBitUse = true;
-        (*it)->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
-        result.rtl = new RTL(pc, stmts);
+        StatementList::iterator it;
+//        for (it = stmts->begin(); it!=stmts->end(); it++){
+//            std::cout<<"JNB: "<<(*it)->prints()<<endl;
+//            (*it)->isBitUse = true;
+//            (*it)->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
+//        }
+            result.rtl = new RTL(pc, stmts);
         BranchStatement* jump = new BranchStatement;
         result.rtl->appendStmt(jump);
         result.numBytes = 4;
         jump->setDest(pc + (Line->offset+1)*4);
         jump->setCondType(BRANCH_JE);
+        jump->isBitUse = true;
+        jump->bitName = (arg1->value.bit.pos>=1 && arg1->value.bit.pos<=8)?strdup((string("specbits")+to_string(arg1->value.bit.pos)).c_str()):arg1->value.c;
+
     }
     else if (opcode == "SETB"){
         ei = Line->expList->begin();
@@ -1433,15 +1439,15 @@ DecodeResult& _8051Decoder::decodeAssembly(ADDRESS pc,std::string line, Assembly
         result.rtl = new RTL(pc, stmts);
 
     //ADDED ONE-BYTE REGISTER at the first time
-    if(first_line){
-        std::cout<<"UNION DEFINE SIZE: "<<unionDefine->size()<<std::endl;
-        std::list<Statement*>* temp = initial_bit_regs(&symbolTable);
-        std::list<Statement*>::iterator li;
-        for(li = temp->begin(); li != temp->end(); ++li){
-            result.rtl->appendStmt((*li), true);
-        }
-        first_line = false;
-    }
+//    if(first_line){
+//        std::cout<<"UNION DEFINE SIZE: "<<unionDefine->size()<<std::endl;
+//        std::list<Statement*>* temp = initial_bit_regs(&symbolTable);
+//        std::list<Statement*>::iterator li;
+//        for(li = temp->begin(); li != temp->end(); ++li){
+//            result.rtl->appendStmt((*li), true);
+//        }
+//        first_line = false;
+//    }
     result.unionDefine = *unionDefine;
     return result;
 }

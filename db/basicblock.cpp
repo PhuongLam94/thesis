@@ -1899,14 +1899,97 @@ bool BasicBlock::makeUnion(std::list<UnionDefine *> &unionDefine, char* bitVar, 
 }
 
 void BasicBlock::replaceAcc(std::list<UnionDefine *> unionDefine, std::map<Exp *, ConstantVariable *> m){
+    std::cout<<"ENTER REPLACE ACC"<<endl;
     std::list<RTL*>::iterator rit;
+    bool convert;
     for (rit = m_pRtls->begin(); rit != m_pRtls->end(); rit++){
         std::list<Statement*>& stmts = (*rit)->getList();
         std::list<Statement*>::iterator sit;
         for (sit = stmts.begin(); sit!=stmts.end(); sit++){
            Statement* statement = (*sit);
+           int subscript = -1;
+           Exp* aDefine = NULL;
+           map<Exp*, ConstantVariable*>::iterator mit;
+           for (mit = m.begin(); mit != m.end(); mit++){
+               Exp* exp = (*mit).first;
+               //std::cout<<exp->prints()<<", "<<exp->isSubscript()<<endl;
+               if (exp->isSubscript() && (*exp->getSubExp1() == *Location::regOf(8))){
+                   int temp = ((RefExp*) exp)->getDef()->getNumber();
+                   //std::cout<<"Temp: "<<temp<<endl;
+                   if (temp>subscript && temp<=statement->getNumber()){
+                       subscript = temp;
+                       aDefine = exp;
+                   }
+               }
+           }
            if (statement->isBitUse){
+               std::cout<<"Statement: "<<statement->prints()<<endl;
+               std::cout<<"Bit name: "<<statement->bitName<<endl;
+               char* byteVar;
+               char* bitName;
+                if (string(statement->bitName).find("specbits") == string::npos){
+                    byteVar = strdup(string(findByteVar(statement->bitName, unionDefine, statement->getProc())).c_str());
+                    bitName = statement->bitName;
+                } else {
+                    string bitNameString = string(statement->bitName);
+                    int i = atoi(bitNameString.substr(bitNameString.length()-1,1).c_str());
 
+                    if (subscript!=-1){
+                        ConstantVariable* val = m[aDefine];
+                        //std::cout<<"aDefine: "<<aDefine->prints()<<endl;
+                        if (val->type == 2){
+                            int aValue = ((Const*) val->variable)->getInt();
+                            list<UnionDefine*>::iterator udit;
+                            for (udit = unionDefine.begin(); udit != unionDefine.end(); udit++){
+                                UnionDefine* ud = (*udit);
+                                if (ud->byteVarValue == aValue){
+                                    byteVar = ud->byteVar;
+                                    bitName = (*ud->bitVar)[i];
+                                }
+                            }
+                        } else {
+                            std::cout<<"ERROR: A DO NOT HAVE A CONSTANT VALUE AT THIS POINT OF PROGRAM"<<endl;
+                            std::cout<<"STATEMENT: "<<statement->prints()<<endl;
+                            //std::cout<<"A VALUE: "<<val->variable->prints()<<", "<<subscript<<endl;
+     //                       for (mit = mapExp.begin(); mit != mapExp.end(); mit++){
+     //                           std::cout<<"Exp: "<<(*mit).first->prints()<<endl;
+     //                           std::cout<<"Value type: "<<(*mit).second->type<<endl;
+     //                       }
+
+                        }
+                    } else {
+                        std::cout<<"ERROR: ACC HASN'T BEEN ASSIGNED YET!";
+                    }
+                }
+                std::cout<<"Byte var: "<<byteVar<<endl;
+                Exp* reg = Location::local(statement->bitName, statement->getProc());
+                if (reg){
+                    Assign* assign = new Assign(reg, new Binary(opMemberAccess,
+                                                               new Binary(opMemberAccess, Location::global(byteVar, statement->getProc())
+                                                                          , new Const("bits")), new Const(bitName)));
+                    statement->replaceRef(reg, assign, convert);
+                }
+           }
+           else {
+               if (subscript != -1){
+                   char * byteVar;
+                   ConstantVariable* val = m[aDefine];
+                   if (val->type == 2 && statement == ((RefExp*)aDefine)->getDef()){
+                       statement->getProc()->removeStatement(statement);
+                   } else if (val->type ==2){
+                       int aValue = ((Const*) val->variable)->getInt();
+                       list<UnionDefine*>::iterator udit;
+                       for (udit = unionDefine.begin(); udit != unionDefine.end(); udit++){
+                           UnionDefine* ud = (*udit);
+                           if (ud->byteVarValue == aValue){
+                               byteVar = ud->byteVar;
+                           }
+                       }
+                       Assign* assign = new Assign(Location::local("a", statement->getProc()), new Binary(opMemberAccess,
+                                                     Location::global(byteVar, statement->getProc()), new Const("byte")));
+                       statement->replaceRef(Location::local("a", statement->getProc()), assign, convert);
+                   }
+               }
            }
         }
     }
@@ -2048,6 +2131,7 @@ char* BasicBlock::findByteVar(char* bitVar, list<UnionDefine*> unionDefine, User
         map<int, char*>::iterator mit;
         for (mit = ud->bitVar->begin(); mit != ud->bitVar->end(); mit++){
             if (strcmp((*mit).second, bitVar) == 0){
+                std::cout<<"ENTER FIND BYTE VAR "<<(ud->byteVar)<<endl;
                 return (ud->byteVar);
             }
         }

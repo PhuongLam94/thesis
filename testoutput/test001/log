@@ -19,70 +19,64 @@ in cluster elf-init
 parameters: i32 argc, [c*]* argv, [c*]* envp
 end parameters
 locals:
-__size8 * BTS r66
-__size32 SLVFLGMAP r208
-__size32 SMPDUP r117
-__size32 XROVLY r123
-union { __size8 byte; struct { __size8 bit1:1; __size8 bit2:1; __size8 bit3:1; __size8 bit4:1; __size8 bit5:1; __size8 bit6:1; __size8 bit7:1; __size8 bit8:1; } bits; } a r8
-__size8 a_1 r8
-__size32 specbits5 r224
 end locals
 symbols:
-  r8 maps to a type union { __size8 byte; struct { __size8 bit1:1; __size8 bit2:1; __size8 bit3:1; __size8 bit4:1; __size8 bit5:1; __size8 bit6:1; __size8 bit7:1; __size8 bit8:1; } bits; }
-  r8 maps to a_1 type __size8
-  r66 maps to BTS type __size8 *
-  r117 maps to SMPDUP type __size32
-  r123 maps to XROVLY type __size32
-  r208 maps to SLVFLGMAP type __size32
-  r224 maps to specbits5 type __size32
   r32{0} maps to argc type int
   r33{0} maps to argv type char *[] *
   r34{0} maps to envp type char *[] *
 end symbols
-live variables: r8,  r66,  r117,  r123,  r208,  r214,  r224
+live variables: r66,  r117,  r123,  r208,  r214,  r224
 end live variables
 Twoway BB:
 in edges: 
 out edges: 10490 1047c 
-00000000    0 *union* a := -
-            0 *32* SMPDUP := -
-            0 *32* SLVFLGMAP := -
-            0 *32* specbits5 := -
-            0 *32* XROVLY := -
-00010474      *union* IMP REF a
-00010478    5 BRANCH 0x10490, condition equals
-High level: SMPDUP ~= 0
+00000000
+00010474
+00010478    3 BRANCH 0x10490, condition equals
+High level: (LOCATION_11.bits.SMPDUP) ~= 0
 Fall BB:
 in edges: 10478 
 out edges: 1048c 
 0001047c
-00010480    8 *8* a_1 := m[ *8**zfill(16,31,SLVFLGMAP + 20)]
-00010484
-00010488   11 *8* m[zfill(16,31,SLVFLGMAP + 20)] := a_1
+00010480
+00010484    7 *32* LOCATION_38.bits.TESTUPS5 := 1
+00010488    9 *8* m[zfill(16,31,SLVFLGMAP + 20)] := LOCATION_38.byte
 L3: Ret BB:
 in edges: 104ac 10488 10494 
 out edges: 
 00000000
-0001048c   12 RET *8* a_1 := a_1
-              Modifieds: *8* a_1,  *16* r11,  *8* r30,  *32* r80,  *32* r146,  *32* r217
-              Reaching definitions: a_1=a_1,   r11=r11,   r30=a,   r32=argc,   r33=argv,   r34=envp,   BTS=BTS,
-                r80=r80,   SMPDUP=SMPDUP,   XROVLY=XROVLY,   r146=r146,   SLVFLGMAP=SLVFLGMAP,   r214=r214,   r217=r217
-                specbits5=specbits5,   tmp1=tmp1,   %flags=%flags,   %ZF=%ZF,   %CF=%CF
+0001048c   10 RET *8* LOCATION_38.byte := LOCATION_38.byte
+              Modifieds: *8* a,  *16* r11,  *32* SIMP,  *32* TESTUPS5,  *32* MASTER
+              Reaching definitions: LOCATION_38.byte=LOCATION_38.byte,   r11=r11,   r32=argc,   r33=argv,   r34=envp,
+                r66=r66,   SIMP=SIMP,   SMPDUP=SMPDUP,   XROVLY=XROVLY,   TESTUPS5=TESTUPS5,   SLVFLGMAP=SLVFLGMAP,
+                r214=r214,   MASTER=MASTER,   specbits6=specbits6,   tmp1=tmp1,   %flags=%flags,   %ZF=%ZF,   %CF=%CF
 L1: Twoway BB:
 in edges: 10478 
 out edges: 1048c 10498 
-00010490   13 *8* a_1 := m[ *8**56]
-00010494   15 BRANCH 0x104b0, condition equals
-High level: specbits5 ~= 1
+00010490
+00010494   13 BRANCH 0x104b0, condition equals
+High level: (OPTIONS2.bits.bit6) ~= 1
 Synthetic out edge(s) to L3 
 Oneway BB:
 in edges: 10494 
 out edges: 1048c 
-00010498   16 *8* a_1 := m[BTS]
-0001049c
+00010498
+0001049c   15 *32* BTS.bits.MASTER := 1
 000104a0
-000104a4   20 *8* a_1 := m[ *8**zfill(16,31,XROVLY + 20)]
-000104a8
-000104ac   22 GOTO 0x1048c
+000104a4
+000104a8   19 *32* OPTIONS2.bits.SIMP := 0
+000104ac   20 GOTO 0x1048c
 
 
+type failure: no type for subexp1 of LOCATION_11.bits.SMPDUP
+type failure: no type for subexp1 of LOCATION_11.bits
+type failure: no type for subexp1 of OPTIONS2.bits.bit6
+type failure: no type for subexp1 of OPTIONS2.bits
+type failure: no type for subexp1 of BTS.bits.MASTER
+type failure: no type for subexp1 of BTS.bits
+type failure: no type for subexp1 of OPTIONS2.bits.SIMP
+type failure: no type for subexp1 of OPTIONS2.bits
+type failure: no type for subexp1 of LOCATION_38.bits.TESTUPS5
+type failure: no type for subexp1 of LOCATION_38.bits
+type failure: no type for subexp1 of LOCATION_38.byte
+type failure: no type for subexp1 of LOCATION_38.byte

@@ -21,7 +21,7 @@ ABCDEFG:
                 MOV     A,OPTIONS+1
                 JNB     SMPDUP,NOP_K1ECROF
                 MOV     A,38H
-                JB      ACC.5,TSMKHC
+                JB      ACC.6,TSMKHC
 		RET
 
 NOP_K1ECROF:    MOV     DPTR,#SLVFLGMAP+14H
