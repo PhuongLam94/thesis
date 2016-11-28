@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.0.3, 2016-11-14T18:28:16. -->
+<!-- Written by QtCreator 4.0.3, 2016-11-17T12:54:25. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -177,7 +177,7 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">-o ./testoutput/test001 -as8 -r ./test/_8051/assembly22</value>
+    <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments">-o ./testoutput/test001 -as8 -r ./test/_8051/assembly</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Executable">/home/phuong/Boomerang-Production/boomerang</value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.WorkingDirectory">%{buildDir}</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Run /home/phuong/Boomerang-Production/boomerang</value>

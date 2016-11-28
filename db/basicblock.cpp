@@ -2032,7 +2032,7 @@ bool BasicBlock::makeUnion_new(std::list<UnionDefine*>& unionDefine, std::map<ch
                    //std::cout<<"aDefine: "<<aDefine->prints()<<endl;
                    if (val->type == 2){
                        aValue = ((Const*) val->variable)->getInt();
-                       //std::cout<<"aValue: "<<aValue<<", "<<bitVar<<endl;
+                       std::cout<<"aValue: "<<aValue<<", "<<bitVar<<endl;
                        bool valid = makeUnion_new(unionDefine, bitVar, aValue, bitVar2);
                        if (!valid)
                            return false;
